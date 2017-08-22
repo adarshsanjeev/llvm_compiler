@@ -6,30 +6,61 @@
   void yyerror (char const *s);
 %}
 
-%token declaration_list
-%token statement_list
 %token NUMBER
+%token STRING
 %token IDENTIFIER
+
+%token DECL_BLOCK
+%token CODE_BLOCK
+
+%token INT
+%token PRINT
+%token PRINTLN
+%token READ
+%token GOTO
+%token WHILE
+%token FOR
+%token IF
+%token ELSE
 %token ETOK
-%left '+'
-%left '*'
 
+%left '>' '<'
+%left '+' '-'
+%left '*' '/'
 %%
+program: decl_block code_block
 
-program:	decl_block code_block
+decl_block: DECL_BLOCK '{' declarations '}'
+code_block: CODE_BLOCK '{' codelines '}'
 
-decl_block:  '{' declaration_list '}'
+declarations: declaration ';' declarations | %empty
+declaration: INT identifiers
 
-code_block:  '{' statement_list '}'
+identifier: IDENTIFIER | IDENTIFIER '[' expr ']'
+identifiers: identifier | identifier ',' identifiers
 
-/*
-expr	: 	expr '+' expr 
-	|	expr '*' expr 
+codelines: codeline codelines | %empty
+codeline: assignment ';' | print ';' | read ';'| while | for | if | label | goto ';'
+label: IDENTIFIER ':'
+goto: GOTO IDENTIFIER | GOTO IDENTIFIER IF expr
+
+assignment: identifier '=' expr
+print: PRINT value_list | PRINTLN value_list
+read: READ identifiers
+value_list: value | value ',' value_list
+value: STRING | identifier
+expr	: 	expr '+' expr
+	|	expr '-' expr
+	|	expr '*' expr
+	|	expr '/' expr
+	|	expr '>' expr
+	|	expr '<' expr
+    |   '(' expr ')'
 	| 	NUMBER
-	|	IDENTIFIER
-	;
-*/
-
+	|	identifier;
+while: WHILE expr '{' codelines '}'
+for: FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
+if: IF expr '{' codelines '}' | IF expr '{' codelines '}' ELSE '{' codelines '}'
 %%
 
 void yyerror (char const *s)
