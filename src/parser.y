@@ -13,6 +13,11 @@
 %token DECL_BLOCK
 %token CODE_BLOCK
 
+%token CMP
+%token NE
+%token GE
+%token LE
+
 %token INT
 %token PRINT
 %token PRINTLN
@@ -42,7 +47,7 @@ identifiers: identifier | identifier ',' identifiers
 codelines: codeline codelines | %empty
 codeline: assignment ';' | print ';' | read ';'| while | for | if | label | goto ';'
 label: IDENTIFIER ':'
-goto: GOTO IDENTIFIER | GOTO IDENTIFIER IF expr
+goto: GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
 
 assignment: identifier '=' expr
 print: PRINT value_list | PRINTLN value_list
@@ -53,14 +58,16 @@ expr	: 	expr '+' expr
 	|	expr '-' expr
 	|	expr '*' expr
 	|	expr '/' expr
-	|	expr '>' expr
-	|	expr '<' expr
     |   '(' expr ')'
 	| 	NUMBER
 	|	identifier;
-while: WHILE expr '{' codelines '}'
+
+cond : expr relop expr
+relop : CMP | NE | '>' | '<' | GE | LE
+
+while: WHILE cond '{' codelines '}'
 for: FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
-if: IF expr '{' codelines '}' | IF expr '{' codelines '}' ELSE '{' codelines '}'
+if: IF cond '{' codelines '}' | IF cond '{' codelines '}' ELSE '{' codelines '}'
 %%
 
 void yyerror (char const *s)

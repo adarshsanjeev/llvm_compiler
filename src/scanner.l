@@ -125,6 +125,22 @@ goto {
 	return '/';
 }
 
+\=\= {
+    return CMP;
+}
+
+\!\= {
+    return NE;
+}
+
+\>\= {
+    return GE;
+}
+
+\<\= {
+    return LE;
+}
+
 \= {
 	//printf("= read\n");
 	return '=';
