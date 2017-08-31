@@ -45,7 +45,7 @@ identifier: IDENTIFIER | IDENTIFIER '[' expr ']'
 identifiers: identifier | identifier ',' identifiers
 
 codelines: codeline codelines | %empty
-codeline: assignment ';' | print ';' | read ';'| while | for | if | label | goto ';'
+codeline: assignment ';' | print ';' | read ';'| while | for | if | label | goto ';' | ';'
 label: IDENTIFIER ':'
 goto: GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
 
@@ -62,7 +62,7 @@ expr	: 	expr '+' expr
 	| 	NUMBER
 	|	identifier;
 
-cond : expr relop expr
+cond : expr relop expr | '(' expr relop expr ')'
 relop : CMP | NE | '>' | '<' | GE | LE
 
 while: WHILE cond '{' codelines '}'
