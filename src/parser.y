@@ -1,9 +1,12 @@
 %{
-  #include <stdio.h>
-  #include <stdlib.h>
-  FILE *yyin;
-  int yylex (void);
+  #include <iostream>
+  #include <string>
+  extern "C" FILE *yyin;
+  extern "C" int yylex ();
+  extern "C" int yyparse ();
+
   void yyerror (char const *s);
+  #include "lex.yy.c"
 %}
 
 %token NUMBER
