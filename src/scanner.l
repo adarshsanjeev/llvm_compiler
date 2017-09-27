@@ -11,117 +11,117 @@ number {digit}+
 
 %%
 declblock {
-	printf("declblock keyword read\n");
+	//printf("declblock keyword read\n");
 	return DECL_BLOCK;
 }
 
 codeblock {
-	printf("codeblock keyword read\n");
+	//printf("codeblock keyword read\n");
 	return CODE_BLOCK;
 }
 
 \( {
-	printf("opening paranthesis read\n");
+	//printf("opening paranthesis read\n");
 	return '(';
 }
 
 \) {
-	printf("closing paranthesis read\n");
+	//printf("closing paranthesis read\n");
 	return ')';
 }
 
 \[ {
-	printf("opening sqrb read\n");
+	//printf("opening sqrb read\n");
 	return '[';
 }
 
 \] {
-	printf("closing sqrb read\n");
+	//printf("closing sqrb read\n");
 	return ']';
 }
 
 \{ {
-	printf("opening brace read\n");
+	//printf("opening brace read\n");
 	return '{';
 }
 
 \} {
-	printf("closing brace read\n");
+	//printf("closing brace read\n");
 	return '}';
 }
 
 int {
-	printf("int keyword read\n");
+	//printf("int keyword read\n");
 	return INT;
 }
 
 print {
-	printf("Print statement\n");
+	//printf("Print statement\n");
 	return PRINT;
 }
 
 println {
-	printf("Print statement\n");
+	//printf("Print statement\n");
 	return PRINTLN;
 }
 
 while {
-	printf ("While statement\n");
+	//printf ("While statement\n");
 	return WHILE;
 }
 
 for {
-	printf ("For statement\n");
+	//printf ("For statement\n");
 	return FOR;
 }
 
 if {
-	printf("if statement\n");
+	//printf("if statement\n");
 	return IF;
 }
 
 else {
-	printf("else statement\n");
+	//printf("else statement\n");
 	return ELSE;
 }
 
 read {
-	printf("Read statement\n");
+	//printf("Read statement\n");
 	return READ;
 }
 
 goto {
-	printf("goto \n");
+	//printf("goto \n");
 	return GOTO;
 }
 
 \".*\" {
-	printf("print string\n");
+	//printf("print string\n");
 	return STRING;
 }
 
 \; {
-	printf("semicolon read\n");
+	//printf("semicolon read\n");
 	return ';';
 }
 
 \+	    {
-	printf("+ read\n");
+	//printf("+ read\n");
 	return '+';
 }
 
 \-	    {
-	printf("- read\n");
+	//printf("- read\n");
 	return '-';
 }
 
 \* 	    {
-	printf("* read\n");
+	//printf("* read\n");
 	return '*';
 }
 
 \/	    {
-	printf("/ read\n");
+	//printf("/ read\n");
 	return '/';
 }
 
@@ -142,43 +142,43 @@ goto {
 }
 
 \= {
-	printf("= read\n");
+	//printf("= read\n");
 	return '=';
 }
 
 \> {
-	printf("> read\n");
+	//printf("> read\n");
 	return '>';
 }
 
 \< {
-	printf("< read\n");
+	//printf("< read\n");
 	return '<';
 }
 
 \, {
-	printf(", read\n");
+	//printf(", read\n");
 	return ',';
 }
 
 : {
-	printf(": read\n");
+	//printf(": read\n");
 	return ':';
 }
 
 [0-9][0-9]*	{
-			printf("Token type: Number, Lexeme/Token Value: %s\n", yytext);  
+			//printf("Token type: Number, Lexeme/Token Value: %s\n", yytext);  
 			return NUMBER; 
 }
 
 [a-zA-Z][a-zA-Z0-9]* {  
-			printf("Token type: Identifier, Lexeme/Token Value: %s\n", yytext);  
+			//printf("Token type: Identifier, Lexeme/Token Value: %s\n", yytext);  
 			return IDENTIFIER; 
 		     } 
 
 {ws}		{ /* Do nothing */ }
 
 .		{ 
-		  printf("Unexpected token encountered: %s\n", yytext); 
+		  //printf("Unexpected token encountered: %s\n", yytext); 
 		  return ETOK;
 		}
