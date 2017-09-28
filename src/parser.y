@@ -2,9 +2,12 @@
   #include <iostream>
   #include <string>
   #include "ast.h"
+  #include "visitor.h"
   extern "C" FILE *yyin;
   extern "C" int yylex ();
   extern "C" int yyparse ();
+
+  using namespace std;
 
   void yyerror (char const *s);
   #include "lex.yy.c"
@@ -52,11 +55,19 @@ code_block: 	CODE_BLOCK '{' codelines '}'
 declarations: 	declaration ';' declarations | %empty
 declaration: 	INT identifiers
 
-identifier: 	IDENTIFIER | IDENTIFIER '[' expr ']'
+identifier: 	IDENTIFIER
+		| 		IDENTIFIER '[' expr ']'
 identifiers: 	identifier | identifier ',' identifiers
 
 codelines: 		codeline codelines | %empty
-codeline: 		assignment ';' | print ';' | read ';'| while | for | if | label | goto ';' | ';'
+codeline: 		assignment ';'
+		| 		print ';'
+		| 		read ';'
+		| 		while
+		| 		for
+		| 		if
+		| 		label
+		| 		goto ';' | ';'
 label: 			IDENTIFIER ':'
 goto: 			GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
 
@@ -65,12 +76,12 @@ print: 			PRINT value_list | PRINTLN value_list
 read: 			READ identifiers
 value_list: 	value | value ',' value_list
 value: 			STRING | identifier
-expr: 			expr '+' expr
-		|		expr '-' expr
-		|		expr '*' expr
-		|		expr '/' expr
-		|   '(' expr ')'
-		| 		NUMBER
+expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}
+		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::minus); }
+		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::product); }
+		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::divide); }
+		|       '(' expr ')' { $$ = $2; }
+		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
 		|		identifier
 
 cond:   expr relop expr

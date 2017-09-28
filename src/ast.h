@@ -87,4 +87,14 @@ public:
 class ASTStatement : public ASTNode {
 };
 
+class ASTIdentifier : public ASTExpression {
+public:
+	std::string id;
+	ASTExpression* index;
+	ASTIdentifier(std::string id, ASTExpression *index) {
+		this->id = id;
+		this->index = index;
+	}
+};
+
 #endif
