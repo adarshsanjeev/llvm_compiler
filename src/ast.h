@@ -52,9 +52,9 @@ class ASTDeclBlock : public ASTNode {
 
 class ASTCodeBlock : public ASTNode {
 public:
-	std::vector<ASTStatement> statements;
-	void add_to_list(ASTStatement *statement) {
-		statements.push_back(*statement);
+	std::vector<ASTStatement*> *statements;
+	ASTCodeBlock (std::vector<ASTStatement*> *statements) {
+		this->statements = statements;
 	}
 };
 

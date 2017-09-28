@@ -16,6 +16,8 @@
 %union {
 	int ival;
 	char* sval;
+	ASTCodeBlock *codeBlock;
+	ASTProgram *program;
 	ASTStatement *statement;
 	vector<ASTStatement*> *statements;
 	ASTIdentifier *id;
@@ -37,6 +39,8 @@
 //						%type	<statement>		while
 %type	<statement>		codeline
 %type	<statements>	codelines
+%type	<codeBlock>		code_block
+%type	<program>		program
 
 %token NUMBER
 %token STRING
@@ -64,10 +68,10 @@
 %left '+' '-'
 %left '*' '/'
 %%
-program: 		decl_block code_block
+program: 		decl_block code_block { $$ = new ASTProgram(new ASTDeclBlock(), $2); root = $$; }
 
 decl_block: 	DECL_BLOCK '{' declarations '}'
-code_block: 	CODE_BLOCK '{' codelines '}'
+code_block: 	CODE_BLOCK '{' codelines '}' { $$ = new ASTCodeBlock($3); }
 
 declarations: 	declaration ';' declarations | %empty
 declaration: 	INT identifiers
@@ -78,7 +82,7 @@ identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 		| 		identifier ',' identifiers { $3->push_back($1); $$ = $3; }
 
 codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
-codeline: 		assignment ';' { $$ = $1; root = $1; }
+codeline: 		assignment ';' { $$ = $1; }
 //		| 		print ';'
 //		| 		read ';'
 //		| 		while
@@ -139,5 +143,6 @@ int main (int argc, char *argv[])
 	yyparse();
 
 	printableVisitor *visitor = new printableVisitor();
-	visitor->visit(root);
+	if (root)
+		visitor->visit(root);
 }
