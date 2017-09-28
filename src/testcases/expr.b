@@ -14,7 +14,16 @@ codeblock{
 	if ( x > y) {
 	   y = y- 5;
 	}
+	if ( x > y) {
+	   y = y- 5;
+	}
 	else {
-		 y = y+ 5;
+		 y = y + 5;
+	}
+	for x = 1, x<2+2 {
+		x = x + 4;
+	}
+	for x = 1, x<2, x+2 {
+		x = x + 4;
 	}
 }

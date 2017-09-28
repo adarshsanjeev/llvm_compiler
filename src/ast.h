@@ -167,11 +167,55 @@ public:
 	}
 };
 
+class ASTForStatement : public ASTStatement {
+public:
+	ASTStatement *init;
+	ASTExpression *limit;
+	ASTExpression *step;
+	ASTCodeBlock *codeBlock;
+	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTExpression *step, std::vector<ASTStatement*> *statements) {
+		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
+		if (!bool_exp) {
+			std::cerr << "Found non boolean expression";
+		}
+		else {
+			this->init = init;
+			this->limit = bool_exp;
+			this->step = step;
+			this->codeBlock = new ASTCodeBlock(statements);
+		}
+	}
+	ASTForStatement(ASTStatement *init, ASTExpression *limit, std::vector<ASTStatement*> *statements) {
+		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
+		if (!bool_exp) {
+			std::cerr << "Found non boolean expression";
+		}
+		else {
+			this->init = init;
+			this->limit = bool_exp;
+			this->codeBlock = new ASTCodeBlock(statements);
+			this->step = NULL;
+		}
+	}
+};
+
 class ASTIfStatement : public ASTStatement {
 public:
 	ASTBooleanExpression *cond;
 	ASTCodeBlock *then_block;
 	ASTCodeBlock *else_block;
+
+	ASTIfStatement(ASTExpression *cond, std::vector<ASTStatement*> *then_block) {
+		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
+		if (!bool_exp) {
+			std::cerr << "Found non boolean expression";
+		}
+		else {
+			this->cond = bool_exp;
+			this->then_block = new ASTCodeBlock(then_block);
+			this->else_block = NULL;
+		}
+	}
 
 	ASTIfStatement(ASTExpression *cond, std::vector<ASTStatement*> *then_block, std::vector<ASTStatement*> *else_block) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
@@ -181,10 +225,7 @@ public:
 		else {
 			this->cond = bool_exp;
 			this->then_block = new ASTCodeBlock(then_block);
-			if (else_block)
-				this->else_block = new ASTCodeBlock(else_block);
-			else
-				this->else_block = NULL;
+			this->else_block = new ASTCodeBlock(else_block);
 		}
 	}
 };

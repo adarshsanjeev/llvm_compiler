@@ -42,6 +42,7 @@
 %type	<codeBlock>		code_block
 %type	<program>		program
 %type	<statement>		if
+%type	<statement>		for
 
 %token NUMBER
 %token STRING
@@ -87,7 +88,7 @@ codeline: 		assignment ';' { $$ = $1; }
 //		| 		print ';'
 		| 		read ';'
 		| 		while
-//		| 		for
+		| 		for
 		| 		if
 //		| 		label
 //		| 		goto ';' | ';'
@@ -118,8 +119,9 @@ relop:  CMP { $$ = BoolOp::equalequal; }
 		|		LE { $$ = BoolOp::lessequal; }
 
 while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
-// for: 			FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
-if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4, NULL); }
+for: 			FOR assignment ',' cond '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
+		| 		FOR assignment ',' cond ',' expr '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
+if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4); }
 		| 		IF cond '{' codelines '}' ELSE '{' codelines '}' { $$ = new ASTIfStatement($2, $4, $8); }
 %%
 
