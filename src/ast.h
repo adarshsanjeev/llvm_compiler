@@ -16,13 +16,14 @@ class ASTIntegerLiteral;
 class ASTStatement;
 class ASTAssignmentStatement;
 
-class ASTStatementList;
-
 enum BinOp {
     plus,
     minus,
     product,
-    divide,
+    divide
+};
+
+enum BoolOp {
     lessthan,
     greaterthan,
     lessequal,
@@ -61,6 +62,7 @@ class ASTExpression : public ASTNode {
 public:
 	ASTExpression() {
 	}
+	virtual ~ASTExpression () {}
 };
 
 class ASTIntegerLiteral : public ASTExpression {
@@ -78,6 +80,19 @@ public:
 	BinOp op;
 
 	ASTBinaryExpression (ASTExpression *left, ASTExpression *right, BinOp op) {
+		this->left_child = left;
+		this->right_child = right;
+		this->op = op;
+	};
+};
+
+class ASTBooleanExpression : public ASTExpression {
+public:
+	ASTExpression *left_child;
+	ASTExpression *right_child;
+	BoolOp op;
+
+	ASTBooleanExpression (ASTExpression *left, ASTExpression *right, BoolOp op) {
 		this->left_child = left;
 		this->right_child = right;
 		this->op = op;
@@ -106,14 +121,44 @@ public:
 };
 
 class ASTStatement : public ASTNode {
+public:
+	virtual ~ASTStatement() {}
 };
 
 class ASTAssignmentStatement : public ASTStatement {
 public:
 	ASTIdentifier *id;
 	ASTExpression *rhs;
-	ASTAssignmentStatement(ASTExpression *rhs) {
-
+	ASTAssignmentStatement(ASTIdentifier *id, ASTExpression *rhs) {
+		this->id = id;
+		this->rhs = rhs;
 	}
 };
+
+class ASTPrintStatement : public ASTStatement {
+public:
+	std::vector<std::string> values;
+	void add_to_list(std::string value) {
+		values.push_back(value);
+	}
+};
+
+class ASTReadStatement : public ASTStatement {
+public:
+	std::vector<ASTIdentifier*> *ids;
+	ASTReadStatement(std::vector<ASTIdentifier*> *ids) {
+		this->ids = ids;
+	}
+};
+
+class ASTWhileStatement : public ASTStatement {
+public:
+	ASTBooleanExpression *cond;
+	std::vector<ASTStatement> *codeBlock;
+	ASTWhileStatement(ASTBooleanExpression *cond, std::vector<ASTStatement> *codeBlock) {
+		this->cond = cond;
+		this->codeBlock = codeBlock;
+	}
+};
+
 #endif

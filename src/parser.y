@@ -17,14 +17,26 @@
 	int ival;
 	char* sval;
 	ASTStatement *statement;
+	vector<ASTStatement*> *statements;
 	ASTIdentifier *id;
+	vector<ASTIdentifier*> *ids;
 	ASTExpression *expr;
+	BoolOp boolOp;
 };
 
 %type	<ival>			NUMBER
 %type	<sval>			IDENTIFIER
+%type	<sval>			STRING
 %type	<id>			identifier
 %type	<expr>			expr
+%type	<statement>		assignment
+%type	<ids>			identifiers
+//						%type	<statement>		read
+//						%type	<boolOp>		relop
+//						%type	<expr>			cond
+//						%type	<statement>		while
+%type	<statement>		codeline
+%type	<statements>	codelines
 
 %token NUMBER
 %token STRING
@@ -62,25 +74,27 @@ declaration: 	INT identifiers
 
 identifier: 	IDENTIFIER { $$ = new ASTSingleIdentifier($1); }
 		| 		IDENTIFIER '[' expr ']' { $$ = new ASTArrayIdentifier($1, $3); }
-identifiers: 	identifier | identifier ',' identifiers
+identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
+		| 		identifier ',' identifiers { $3->push_back($1); $$ = $3; }
 
-codelines: 		codeline codelines | %empty
-codeline: 		assignment ';'
-		| 		print ';'
-		| 		read ';'
-		| 		while
-		| 		for
-		| 		if
-		| 		label
-		| 		goto ';' | ';'
-label: 			IDENTIFIER ':'
-goto: 			GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
+codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
+codeline: 		assignment ';' { $$ = $1; root = $1; }
+//		| 		print ';'
+//		| 		read ';'
+//		| 		while
+//		| 		for
+//		| 		if
+//		| 		label
+//		| 		goto ';' | ';'
+// label: 			IDENTIFIER ':'
+// goto: 			GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
 
-assignment: 	identifier '=' expr
-print: 			PRINT value_list | PRINTLN value_list
-read: 			READ identifiers
-value_list: 	value | value ',' value_list
-value: 			STRING | identifier
+assignment: 	identifier '=' expr { $$ = new ASTAssignmentStatement($1, $3); }
+//			 print: 			PRINT value_list
+//			| 		PRINTLN value_list
+//	read: 			READ identifiers { $$ = new ASTReadStatement($2); }
+// value_list: 	value | value ',' value_list
+// value: 			STRING | identifier
 expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}
 		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::minus); }
 		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::product); }
@@ -89,13 +103,18 @@ expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
 		|		identifier { $$ = $1; }
 
-cond:   expr relop expr
-		| '(' expr relop expr ')'
-relop:  CMP | NE | '>' | '<' | GE | LE
+// cond:   expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
+// 		| '(' expr relop expr ')' { $$ = new ASTBooleanExpression($2, $4, $3); }
+// relop:  CMP { $$ = BoolOp::equalequal; }
+// 		|		NE { $$ = BoolOp::notequal; }
+// 		|       '>' { $$ = BoolOp::greaterthan; }
+// 		|   	'<' { $$ = BoolOp::lessthan; }
+// 		|		GE { $$ = BoolOp::greaterequal; }
+// 		|		LE { $$ = BoolOp::lessequal; }
 
-while: 			WHILE cond '{' codelines '}'
-for: 			FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
-if: 			IF cond '{' codelines '}' | IF cond '{' codelines '}' ELSE '{' codelines '}'
+// while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $3); }
+// for: 			FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
+// if: 			IF cond '{' codelines '}' | IF cond '{' codelines '}' ELSE '{' codelines '}'
 %%
 
 void yyerror (char const *s)
@@ -103,7 +122,7 @@ void yyerror (char const *s)
        fprintf (stderr, "%s\n", s);
 }
 
-int main(int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	if (argc == 1 ) {
 		fprintf(stderr, "Correct usage: bcc filename\n");
@@ -118,4 +137,7 @@ int main(int argc, char *argv[])
 	yyin = fopen(argv[1], "r");
 
 	yyparse();
+
+	printableVisitor *visitor = new printableVisitor();
+	visitor->visit(root);
 }

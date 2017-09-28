@@ -97,6 +97,7 @@ goto {
 
 \".*\" {
 	//printf("print string\n");
+	yylval.sval = strdup(yytext);
 	return STRING;
 }
 
