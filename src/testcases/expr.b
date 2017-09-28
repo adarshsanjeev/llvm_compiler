@@ -30,4 +30,5 @@ codeblock{
 	}
 	goto LABEL1 ;
 	goto LABEL2 if x>3;
+	print "HELLO", "JOHN", x;
 }

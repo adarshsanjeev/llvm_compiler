@@ -40,6 +40,20 @@ public:
 		}
 	}
 
+	void visit (ASTPrintStatement* ast) {
+		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
+		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
+		if (single_id) {
+			std::cout << single_id->id;
+		}
+		if (array_id) {
+			std::cout << array_id->id;
+			std::cout << "[";
+			visit(array_id->index);
+			std::cout << "]";
+		}
+	}
+
 	void visit (ASTExpression* ast) {
 		ASTIntegerLiteral *int_literal = dynamic_cast<ASTIntegerLiteral *>(ast);
 		ASTBinaryExpression *bin_exp = dynamic_cast<ASTBinaryExpression *>(ast);
@@ -76,6 +90,7 @@ public:
 		ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast);
 		ASTLabel *label = dynamic_cast<ASTLabel *>(ast);
 		ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast);
+		ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast);
 
 		if (assignmentStatement) {
 			std::cout << "Assignment Statement:";
@@ -133,9 +148,23 @@ public:
 			}
 			std::cout << std::endl;
 		}
+		else if (printStatement) {
+			std::cout << "PRINT " << std::endl;
+			/* for (std::vector<ASTPrintable*>::iterator i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) { */
+			/* 	std::cout <<"PRINTING"; */
+			/* 	if ((*i)->id) { */
+			/* 		visit ((*i)->id); */
+			/* 	} */
+			/* 	else { */
+			/* 		std::cout << (*i)->text; */
+			/* 	} */
+			/* } */
+			/* std::cout << std::endl; */
+		}
 		else {
 			std::cerr << "Unknown statement error";
 		}
 	}
 };
+
 #endif

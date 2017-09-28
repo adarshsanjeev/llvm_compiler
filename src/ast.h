@@ -135,11 +135,24 @@ public:
 	}
 };
 
+class ASTPrintable : public ASTNode {
+public:
+	std::string text;
+	ASTIdentifier *id;
+	ASTPrintable(std::string text) {
+		this->text = text;
+		this->id = NULL;
+	}
+	ASTPrintable(ASTIdentifier *id) {
+		this->id = id;
+	}
+};
+
 class ASTPrintStatement : public ASTStatement {
 public:
-	std::vector<std::string> values;
-	void add_to_list(std::string value) {
-		values.push_back(value);
+	std::vector<ASTPrintable*> *printable;
+	ASTPrintStatement(std::vector<ASTPrintable*> *printable) {
+		this->printable = printable;
 	}
 };
 

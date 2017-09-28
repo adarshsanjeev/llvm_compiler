@@ -24,6 +24,8 @@
 	vector<ASTIdentifier*> *ids;
 	ASTExpression *expr;
 	BoolOp boolOp;
+	ASTPrintable *printable;
+	vector<ASTPrintable*> *printables;
 };
 
 %type	<ival>			NUMBER
@@ -45,6 +47,9 @@
 %type	<statement>		for
 %type	<statement>		label
 %type	<statement>		goto
+%type	<statement>		print
+%type	<printable>		value
+%type	<printables>	value_list;
 
 %token NUMBER
 %token STRING
@@ -87,7 +92,7 @@ identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 
 codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
 codeline: 		assignment ';' { $$ = $1; }
-//		| 		print ';' { $$ = $1; }
+		| 		print ';' { $$ = $1; }
 		| 		read ';' { $$ = $1; }
 		| 		while { $$ = $1; }
 		| 		for { $$ = $1; }
@@ -101,11 +106,12 @@ goto: 			GOTO IDENTIFIER { $$ = new ASTGoToStatement($2); }
 		| 		GOTO IDENTIFIER IF cond { $$ = new ASTGoToStatement($2, $4); }
 
 assignment: 	identifier '=' expr { $$ = new ASTAssignmentStatement($1, $3); }
-//			 print: 			PRINT value_list
-//			| 		PRINTLN value_list
+print: 			PRINT value_list { $$ = new ASTPrintStatement($2); }
+		| 		PRINTLN value_list { $$ = new ASTPrintStatement($2); }
 read: 			READ identifiers { $$ = new ASTReadStatement($2); }
-// value_list: 	value | value ',' value_list
-// value: 			STRING | identifier
+value_list: 	value { $$ = new vector<ASTPrintable*>; $$->push_back($1); } | value ',' value_list { $3->push_back($1); }
+value:			STRING { $$ = new ASTPrintable($1); }
+		|		identifier { $$ = new ASTPrintable($1); }
 expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}
 		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::minus); }
 		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::product); }
