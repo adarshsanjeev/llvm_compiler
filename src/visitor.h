@@ -74,6 +74,8 @@ public:
 		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
 		ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast);
 		ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast);
+		ASTLabel *label = dynamic_cast<ASTLabel *>(ast);
+		ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast);
 
 		if (assignmentStatement) {
 			std::cout << "Assignment Statement:";
@@ -119,6 +121,17 @@ public:
 			}
 			std::cout << std::endl;
 			visit(forStatement->codeBlock);
+		}
+		else if (label) {
+			std::cout<<label->label_name<<":"<<std::endl;
+		}
+		else if (goTo) {
+			std::cout<< "goto " << goTo->label_name;
+			if (goTo->cond) {
+				std::cout << " if ";
+				visit(goTo->cond);
+			}
+			std::cout << std::endl;
 		}
 		else {
 			std::cerr << "Unknown statement error";

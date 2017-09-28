@@ -43,6 +43,8 @@
 %type	<program>		program
 %type	<statement>		if
 %type	<statement>		for
+%type	<statement>		label
+%type	<statement>		goto
 
 %token NUMBER
 %token STRING
@@ -85,15 +87,18 @@ identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 
 codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
 codeline: 		assignment ';' { $$ = $1; }
-//		| 		print ';'
-		| 		read ';'
-		| 		while
-		| 		for
-		| 		if
-//		| 		label
-//		| 		goto ';' | ';'
-// label: 			IDENTIFIER ':'
-// goto: 			GOTO IDENTIFIER | GOTO IDENTIFIER IF cond
+//		| 		print ';' { $$ = $1; }
+		| 		read ';' { $$ = $1; }
+		| 		while { $$ = $1; }
+		| 		for { $$ = $1; }
+		| 		if { $$ = $1; }
+		| 		label { $$ = $1; }
+		| 		goto ';' { $$ = $1; }
+		| ';'
+
+label: 			IDENTIFIER ':' { $$ = new ASTLabel($1); }
+goto: 			GOTO IDENTIFIER { $$ = new ASTGoToStatement($2); }
+		| 		GOTO IDENTIFIER IF cond { $$ = new ASTGoToStatement($2, $4); }
 
 assignment: 	identifier '=' expr { $$ = new ASTAssignmentStatement($1, $3); }
 //			 print: 			PRINT value_list

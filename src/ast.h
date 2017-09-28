@@ -151,6 +151,28 @@ public:
 	}
 };
 
+class ASTLabel : public ASTStatement {
+public:
+	std::string label_name;
+	ASTLabel(std::string label_name) {
+		this->label_name = label_name;
+	}
+};
+
+class ASTGoToStatement : public ASTStatement {
+public:
+	std::string label_name;
+	ASTBooleanExpression* cond;
+	ASTGoToStatement(std::string label_name) {
+		this->label_name = label_name;
+		this->cond = NULL;
+	}
+	ASTGoToStatement(std::string label_name, ASTExpression* cond) {
+		this->label_name = label_name;
+		this->cond = dynamic_cast<ASTBooleanExpression *>(cond);
+	}
+};
+
 class ASTWhileStatement : public ASTStatement {
 public:
 	ASTBooleanExpression *cond;
