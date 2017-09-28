@@ -72,6 +72,7 @@ public:
 		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
 		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
 		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
+		ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast);
 		if (assignmentStatement) {
 			std::cout << "Assignment Statement:";
 			visit(assignmentStatement->id);
@@ -92,6 +93,18 @@ public:
 			visit (whileStatement->cond);
 			std::cout << std::endl;
 			visit (whileStatement->codeBlock);
+		}
+		else if (ifStatement) {
+			std::cout << "IF ";
+			visit (ifStatement->cond);
+			std::cout << std::endl;
+			visit (ifStatement->then_block);
+			std::cout << std::endl;
+			if (ifStatement->else_block) {
+				std::cout << "ELSE" << std::endl;
+				visit (ifStatement->else_block);
+				std::cout << std::endl;
+			}
 		}
 		else {
 			std::cerr << "Unknown statement error";

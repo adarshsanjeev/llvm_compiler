@@ -167,4 +167,26 @@ public:
 	}
 };
 
+class ASTIfStatement : public ASTStatement {
+public:
+	ASTBooleanExpression *cond;
+	ASTCodeBlock *then_block;
+	ASTCodeBlock *else_block;
+
+	ASTIfStatement(ASTExpression *cond, std::vector<ASTStatement*> *then_block, std::vector<ASTStatement*> *else_block) {
+		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
+		if (!bool_exp) {
+			std::cerr << "Found non boolean expression";
+		}
+		else {
+			this->cond = bool_exp;
+			this->then_block = new ASTCodeBlock(then_block);
+			if (else_block)
+				this->else_block = new ASTCodeBlock(else_block);
+			else
+				this->else_block = NULL;
+		}
+	}
+};
+
 #endif
