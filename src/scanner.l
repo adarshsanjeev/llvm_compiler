@@ -168,11 +168,13 @@ goto {
 
 [0-9][0-9]*	{
 			//printf("Token type: Number, Lexeme/Token Value: %s\n", yytext);  
+	        yylval.ival = atoi(yytext);
 			return NUMBER; 
 }
 
 [a-zA-Z][a-zA-Z0-9]* {  
-			//printf("Token type: Identifier, Lexeme/Token Value: %s\n", yytext);  
+			//printf("Token type: Identifier, Lexeme/Token Value: %s\n", yytext);
+	        yylval.sval = strdup(yytext);
 			return IDENTIFIER; 
 		     } 
 

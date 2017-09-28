@@ -15,10 +15,15 @@
 
 %union {
 	int ival;
+	char* sval;
+	ASTStatement *statement;
+	ASTIdentifier *id;
 	ASTExpression *expr;
 };
 
 %type	<ival>			NUMBER
+%type	<sval>			IDENTIFIER
+%type	<id>			identifier
 %type	<expr>			expr
 
 %token NUMBER
@@ -55,8 +60,8 @@ code_block: 	CODE_BLOCK '{' codelines '}'
 declarations: 	declaration ';' declarations | %empty
 declaration: 	INT identifiers
 
-identifier: 	IDENTIFIER
-		| 		IDENTIFIER '[' expr ']'
+identifier: 	IDENTIFIER { $$ = new ASTSingleIdentifier($1); }
+		| 		IDENTIFIER '[' expr ']' { $$ = new ASTArrayIdentifier($1, $3); }
 identifiers: 	identifier | identifier ',' identifiers
 
 codelines: 		codeline codelines | %empty
@@ -82,7 +87,7 @@ expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit
 		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::divide); }
 		|       '(' expr ')' { $$ = $2; }
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
-		|		identifier
+		|		identifier { $$ = $1; }
 
 cond:   expr relop expr
 		| '(' expr relop expr ')'

@@ -84,17 +84,36 @@ public:
 	};
 };
 
-class ASTStatement : public ASTNode {
+class ASTIdentifier : public ASTExpression {
 };
 
-class ASTIdentifier : public ASTExpression {
+class ASTSingleIdentifier : public ASTIdentifier {
+public:
+	std::string id;
+	ASTSingleIdentifier(std::string id) {
+		this->id = id;
+	}
+};
+
+class ASTArrayIdentifier : public ASTIdentifier {
 public:
 	std::string id;
 	ASTExpression* index;
-	ASTIdentifier(std::string id, ASTExpression *index) {
+	ASTArrayIdentifier(std::string id, ASTExpression *index) {
 		this->id = id;
 		this->index = index;
 	}
 };
 
+class ASTStatement : public ASTNode {
+};
+
+class ASTAssignmentStatement : public ASTStatement {
+public:
+	ASTIdentifier *id;
+	ASTExpression *rhs;
+	ASTAssignmentStatement(ASTExpression *rhs) {
+
+	}
+};
 #endif
