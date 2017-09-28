@@ -34,10 +34,9 @@
 %type	<statement>		assignment
 %type	<ids>			identifiers
 %type	<statement>		read
-//						%type	<statement>		read
-//						%type	<boolOp>		relop
-//						%type	<expr>			cond
-//						%type	<statement>		while
+%type	<boolOp>		relop
+%type	<expr>			cond
+%type	<statement>		while
 %type	<statement>		codeline
 %type	<statements>	codelines
 %type	<codeBlock>		code_block
@@ -86,7 +85,7 @@ codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = 
 codeline: 		assignment ';' { $$ = $1; }
 //		| 		print ';'
 		| 		read ';'
-//		| 		while
+		| 		while
 //		| 		for
 //		| 		if
 //		| 		label
@@ -108,18 +107,18 @@ expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
 		|		identifier { $$ = $1; }
 
-// cond:   expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
-// 		| '(' expr relop expr ')' { $$ = new ASTBooleanExpression($2, $4, $3); }
-// relop:  CMP { $$ = BoolOp::equalequal; }
-// 		|		NE { $$ = BoolOp::notequal; }
-// 		|       '>' { $$ = BoolOp::greaterthan; }
-// 		|   	'<' { $$ = BoolOp::lessthan; }
-// 		|		GE { $$ = BoolOp::greaterequal; }
-// 		|		LE { $$ = BoolOp::lessequal; }
+cond:   expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
+		| '(' expr relop expr ')' { $$ = new ASTBooleanExpression($2, $4, $3); }
+relop:  CMP { $$ = BoolOp::equalequal; }
+		|		NE { $$ = BoolOp::notequal; }
+		|       '>' { $$ = BoolOp::greaterthan; }
+		|   	'<' { $$ = BoolOp::lessthan; }
+		|		GE { $$ = BoolOp::greaterequal; }
+		|		LE { $$ = BoolOp::lessequal; }
 
-// while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $3); }
+while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
 // for: 			FOR assignment ',' expr ',' expr '{' codelines '}' | FOR assignment ',' expr '{' codelines '}'
-// if: 			IF cond '{' codelines '}' | IF cond '{' codelines '}' ELSE '{' codelines '}'
+//				 if: 			IF cond '{' codelines '}' | IF cond '{' codelines '}' ELSE '{' codelines '}'
 %%
 
 void yyerror (char const *s)

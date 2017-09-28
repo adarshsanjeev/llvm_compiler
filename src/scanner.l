@@ -168,7 +168,7 @@ goto {
 }
 
 [0-9][0-9]*	{
-			//printf("Token type: Number, Lexeme/Token Value: %s\n", yytext);  
+			//printf("Token type: Number, Lexeme/Token Value: %s\n", yytext);
 	        yylval.ival = atoi(yytext);
 			return NUMBER; 
 }
@@ -182,6 +182,6 @@ goto {
 {ws}		{ /* Do nothing */ }
 
 .		{ 
-		  //printf("Unexpected token encountered: %s\n", yytext); 
+		  //printf("Unexpected token encountered: %s\n", yytext);
 		  return ETOK;
 		}

@@ -154,10 +154,16 @@ public:
 class ASTWhileStatement : public ASTStatement {
 public:
 	ASTBooleanExpression *cond;
-	std::vector<ASTStatement> *codeBlock;
-	ASTWhileStatement(ASTBooleanExpression *cond, std::vector<ASTStatement> *codeBlock) {
-		this->cond = cond;
-		this->codeBlock = codeBlock;
+	ASTCodeBlock *codeBlock;
+	ASTWhileStatement(ASTExpression *cond, std::vector<ASTStatement*> *statements) {
+		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
+		if (!bool_exp) {
+			std::cerr << "Found non boolean expression";
+		}
+		else {
+			this->cond = bool_exp;
+			this->codeBlock = new ASTCodeBlock(statements);
+		}
 	}
 };
 
