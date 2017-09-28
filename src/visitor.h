@@ -19,7 +19,8 @@ public:
 	void visit (ASTDeclBlock* ast) {
 	}
 	void visit (ASTCodeBlock* ast) {
-		for (std::vector<ASTStatement*>::iterator i = ast->statements->begin(); i != ast->statements->end(); i++) {
+		std::cout << "Starting Code Block" << std::endl;
+		for (std::vector<ASTStatement*>::iterator i = ast->statements->end()-1; i >= ast->statements->begin(); i--) {
 			visit(*i);
 		}
 	}
@@ -32,7 +33,9 @@ public:
 		}
 		if (array_id) {
 			std::cout << array_id->id;
-			std::cout << "[" << array_id->index << "]";
+			std::cout << "[";
+			visit(array_id->index);
+			std::cout << "]";
 		}
 	}
 
@@ -58,12 +61,21 @@ public:
 
 	void visit (ASTStatement* ast) {
 		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
+		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
 		if (assignmentStatement) {
 			std::cout << "Assignment Statement:";
 			visit(assignmentStatement->id);
 			std::cout<<" = ";
 			visit(assignmentStatement->rhs);
 			std::cout<<std::endl;
+		}
+		else if (readStatement) {
+			std::cout << "Read ";
+			for (std::vector<ASTIdentifier*>::iterator i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
+				visit(*i);
+				std::cout << " ";
+			}
+			std::cout << std::endl;
 		}
 	}
 };

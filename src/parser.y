@@ -33,6 +33,7 @@
 %type	<expr>			expr
 %type	<statement>		assignment
 %type	<ids>			identifiers
+%type	<statement>		read
 //						%type	<statement>		read
 //						%type	<boolOp>		relop
 //						%type	<expr>			cond
@@ -84,7 +85,7 @@ identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
 codeline: 		assignment ';' { $$ = $1; }
 //		| 		print ';'
-//		| 		read ';'
+		| 		read ';'
 //		| 		while
 //		| 		for
 //		| 		if
@@ -96,7 +97,7 @@ codeline: 		assignment ';' { $$ = $1; }
 assignment: 	identifier '=' expr { $$ = new ASTAssignmentStatement($1, $3); }
 //			 print: 			PRINT value_list
 //			| 		PRINTLN value_list
-//	read: 			READ identifiers { $$ = new ASTReadStatement($2); }
+read: 			READ identifiers { $$ = new ASTReadStatement($2); }
 // value_list: 	value | value ',' value_list
 // value: 			STRING | identifier
 expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}
