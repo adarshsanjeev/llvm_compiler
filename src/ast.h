@@ -2,6 +2,9 @@
 #define _AST_H
 #include <vector>
 #include <string>
+#include <map>
+
+using namespace std;
 
 class ASTNode;
 
@@ -52,8 +55,8 @@ class ASTDeclBlock : public ASTNode {
 
 class ASTCodeBlock : public ASTNode {
 public:
-	std::vector<ASTStatement*> *statements;
-	ASTCodeBlock (std::vector<ASTStatement*> *statements) {
+	vector<ASTStatement*> *statements;
+	ASTCodeBlock (vector<ASTStatement*> *statements) {
 		this->statements = statements;
 	}
 };
@@ -104,21 +107,55 @@ class ASTIdentifier : public ASTExpression {
 
 class ASTSingleIdentifier : public ASTIdentifier {
 public:
-	std::string id;
-	ASTSingleIdentifier(std::string id) {
+	string id;
+	ASTSingleIdentifier(string id) {
 		this->id = id;
 	}
 };
 
 class ASTArrayIdentifier : public ASTIdentifier {
 public:
-	std::string id;
+	string id;
 	ASTExpression* index;
-	ASTArrayIdentifier(std::string id, ASTExpression *index) {
+	ASTArrayIdentifier(string id, ASTExpression *index) {
 		this->id = id;
 		this->index = index;
 	}
 };
+
+map<string, int> variableTable;
+
+class SymbolTable : public ASTNode {
+public:
+	void addToMap(vector<ASTIdentifier*> *ids) {
+		for (auto i = ids->begin(); i!=ids->end(); i++) {
+			ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(*i);
+			ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
+			if (single_id != NULL) {
+				if (checkIfDeclared(single_id))
+					cerr<<"Already Declared" << endl;
+				else
+					variableTable[single_id->id] = 0;
+			}
+			if (array_id != NULL) {
+				if (checkIfDeclared(array_id))
+					cerr<<"Already Declared" << endl;
+				else
+					variableTable[array_id->id] = 0;
+			}
+		}
+	}
+	bool checkIfDeclared (ASTIdentifier *id) {
+		ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(id);
+		ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(id);
+		if (single_id != NULL) {
+			variableTable.find(single_id->id) != variableTable.end();
+		}
+		if (array_id != NULL) {
+			variableTable.find(array_id->id) != variableTable.end();
+		}
+	}
+}*symbolTable;
 
 class ASTStatement : public ASTNode {
 public:
@@ -130,6 +167,10 @@ public:
 	ASTIdentifier *id;
 	ASTExpression *rhs;
 	ASTAssignmentStatement(ASTIdentifier *id, ASTExpression *rhs) {
+		if (!symbolTable->checkIfDeclared(id)) {
+			cerr << "Undeclared variable used" << endl;
+			exit(-1);
+		}
 		this->id = id;
 		this->rhs = rhs;
 	}
@@ -137,50 +178,54 @@ public:
 
 class ASTPrintable : public ASTNode {
 public:
-	std::string text;
+	string text;
 	ASTIdentifier *id;
-	ASTPrintable(std::string text) {
+	ASTPrintable(string text) {
 		this->text = text;
 		this->id = NULL;
 	}
 	ASTPrintable(ASTIdentifier *id) {
+		if (!symbolTable->checkIfDeclared(id)) {
+			cerr << "Undeclared variable used" << endl;
+			exit(-1);
+		}
 		this->id = id;
 	}
 };
 
 class ASTPrintStatement : public ASTStatement {
 public:
-	std::vector<ASTPrintable*> *printable;
-	ASTPrintStatement(std::vector<ASTPrintable*> *printable) {
+	vector<ASTPrintable*> *printable;
+	ASTPrintStatement(vector<ASTPrintable*> *printable) {
 		this->printable = printable;
 	}
 };
 
 class ASTReadStatement : public ASTStatement {
 public:
-	std::vector<ASTIdentifier*> *ids;
-	ASTReadStatement(std::vector<ASTIdentifier*> *ids) {
+	vector<ASTIdentifier*> *ids;
+	ASTReadStatement(vector<ASTIdentifier*> *ids) {
 		this->ids = ids;
 	}
 };
 
 class ASTLabel : public ASTStatement {
 public:
-	std::string label_name;
-	ASTLabel(std::string label_name) {
+	string label_name;
+	ASTLabel(string label_name) {
 		this->label_name = label_name;
 	}
 };
 
 class ASTGoToStatement : public ASTStatement {
 public:
-	std::string label_name;
+	string label_name;
 	ASTBooleanExpression* cond;
-	ASTGoToStatement(std::string label_name) {
+	ASTGoToStatement(string label_name) {
 		this->label_name = label_name;
 		this->cond = NULL;
 	}
-	ASTGoToStatement(std::string label_name, ASTExpression* cond) {
+	ASTGoToStatement(string label_name, ASTExpression* cond) {
 		this->label_name = label_name;
 		this->cond = dynamic_cast<ASTBooleanExpression *>(cond);
 	}
@@ -190,10 +235,10 @@ class ASTWhileStatement : public ASTStatement {
 public:
 	ASTBooleanExpression *cond;
 	ASTCodeBlock *codeBlock;
-	ASTWhileStatement(ASTExpression *cond, std::vector<ASTStatement*> *statements) {
+	ASTWhileStatement(ASTExpression *cond, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
 		if (!bool_exp) {
-			std::cerr << "Found non boolean expression";
+			cerr << "Found non boolean expression" << endl;
 		}
 		else {
 			this->cond = bool_exp;
@@ -208,10 +253,10 @@ public:
 	ASTExpression *limit;
 	ASTExpression *step;
 	ASTCodeBlock *codeBlock;
-	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTExpression *step, std::vector<ASTStatement*> *statements) {
+	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTExpression *step, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
-			std::cerr << "Found non boolean expression";
+			cerr << "Found non boolean expression" << endl;
 		}
 		else {
 			this->init = init;
@@ -220,10 +265,10 @@ public:
 			this->codeBlock = new ASTCodeBlock(statements);
 		}
 	}
-	ASTForStatement(ASTStatement *init, ASTExpression *limit, std::vector<ASTStatement*> *statements) {
+	ASTForStatement(ASTStatement *init, ASTExpression *limit, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
-			std::cerr << "Found non boolean expression";
+			cerr << "Found non boolean expression" << endl;
 		}
 		else {
 			this->init = init;
@@ -240,10 +285,10 @@ public:
 	ASTCodeBlock *then_block;
 	ASTCodeBlock *else_block;
 
-	ASTIfStatement(ASTExpression *cond, std::vector<ASTStatement*> *then_block) {
+	ASTIfStatement(ASTExpression *cond, vector<ASTStatement*> *then_block) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
 		if (!bool_exp) {
-			std::cerr << "Found non boolean expression";
+			cerr << "Found non boolean expression" << endl;
 		}
 		else {
 			this->cond = bool_exp;
@@ -252,10 +297,10 @@ public:
 		}
 	}
 
-	ASTIfStatement(ASTExpression *cond, std::vector<ASTStatement*> *then_block, std::vector<ASTStatement*> *else_block) {
+	ASTIfStatement(ASTExpression *cond, vector<ASTStatement*> *then_block, vector<ASTStatement*> *else_block) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
 		if (!bool_exp) {
-			std::cerr << "Found non boolean expression";
+			cerr << "Found non boolean expression" << endl;
 		}
 		else {
 			this->cond = bool_exp;

@@ -83,7 +83,7 @@ decl_block: 	DECL_BLOCK '{' declarations '}'
 code_block: 	CODE_BLOCK '{' codelines '}' { $$ = new ASTCodeBlock($3); }
 
 declarations: 	declaration ';' declarations | %empty
-declaration: 	INT identifiers
+declaration: 	INT identifiers { symbolTable->addToMap($2); }
 
 identifier: 	IDENTIFIER { $$ = new ASTSingleIdentifier($1); }
 		| 		IDENTIFIER '[' expr ']' { $$ = new ASTArrayIdentifier($1, $3); }

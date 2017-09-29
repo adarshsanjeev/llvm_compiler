@@ -1,5 +1,6 @@
 declblock {
-
+		  int x, y;
+		  int z;
 }
 
 codeblock{
