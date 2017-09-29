@@ -109,7 +109,7 @@ assignment: 	identifier '=' expr { $$ = new ASTAssignmentStatement($1, $3); }
 print: 			PRINT value_list { $$ = new ASTPrintStatement($2); }
 		| 		PRINTLN value_list { $$ = new ASTPrintStatement($2); }
 read: 			READ identifiers { $$ = new ASTReadStatement($2); }
-value_list: 	value { $$ = new vector<ASTPrintable*>; $$->push_back($1); } | value ',' value_list { $3->push_back($1); }
+value_list: 	value { $$ = new vector<ASTPrintable*>; $$->push_back($1); } | value ',' value_list { $3->push_back($1); $$=$3; }
 value:			STRING { $$ = new ASTPrintable($1); }
 		|		identifier { $$ = new ASTPrintable($1); }
 expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}

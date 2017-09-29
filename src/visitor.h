@@ -1,6 +1,5 @@
 #ifndef _VISITOR_H
 #define _VISITOR_H
-
 ASTProgram *root = NULL;
 
 class Visitor {
@@ -19,24 +18,24 @@ public:
 	void visit (ASTDeclBlock* ast) {
 	}
 	void visit (ASTCodeBlock* ast) {
-		std::cout << "Starting Code Block {" << std::endl;
-		for (std::vector<ASTStatement*>::iterator i = ast->statements->end()-1; i >= ast->statements->begin(); i--) {
+		cout << "Starting Code Block {" << endl;
+		for (vector<ASTStatement*>::iterator i = ast->statements->end()-1; i >= ast->statements->begin(); i--) {
 			visit(*i);
 		}
-		std::cout << "} Ending Code Block" << std::endl;
+		cout << "} Ending Code Block" << endl;
 	}
 
 	void visit (ASTIdentifier* ast) {
 		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
-			std::cout << single_id->id;
+			cout << single_id->id;
 		}
 		if (array_id) {
-			std::cout << array_id->id;
-			std::cout << "[";
+			cout << array_id->id;
+			cout << "[";
 			visit(array_id->index);
-			std::cout << "]";
+			cout << "]";
 		}
 	}
 
@@ -44,13 +43,13 @@ public:
 		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
-			std::cout << single_id->id;
+			cout << single_id->id;
 		}
 		if (array_id) {
-			std::cout << array_id->id;
-			std::cout << "[";
+			cout << array_id->id;
+			cout << "[";
 			visit(array_id->index);
-			std::cout << "]";
+			cout << "]";
 		}
 	}
 
@@ -60,16 +59,16 @@ public:
 		ASTBooleanExpression *bool_exp = dynamic_cast<ASTBooleanExpression *>(ast);
 		ASTIdentifier *id = dynamic_cast<ASTIdentifier *>(ast);
 		if (int_literal) {
-			std::cout << int_literal->value;
+			cout << int_literal->value;
 		}
 		else if (bin_exp) {
 			visit(bin_exp->left_child);
-			std::cout << "[" << bin_exp->op << "]";
+			cout << "[" << bin_exp->op << "]";
 			visit(bin_exp->right_child);
 		}
 		else if (bool_exp) {
 			visit(bool_exp->left_child);
-			std::cout << "[" << bool_exp->op << "]";
+			cout << "[" << bool_exp->op << "]";
 			visit(bool_exp->right_child);
 		}
 		else if (id) {
@@ -78,7 +77,7 @@ public:
 		else if (bool_exp) {
 		}
 		else {
-			std::cerr<< "Unknown Type of expression!";
+			cerr<< "Unknown Type of expression!";
 		}
 	}
 
@@ -93,76 +92,73 @@ public:
 		ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast);
 
 		if (assignmentStatement) {
-			std::cout << "Assignment Statement:";
+			cout << "Assignment Statement:";
 			visit(assignmentStatement->id);
-			std::cout<<" = ";
+			cout<<" = ";
 			visit(assignmentStatement->rhs);
-			std::cout<<std::endl;
+			cout<<endl;
 		}
 		else if (readStatement) {
-			std::cout << "Read ";
-			for (std::vector<ASTIdentifier*>::iterator i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
+			cout << "Read ";
+			for (vector<ASTIdentifier*>::iterator i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
 				visit(*i);
-				std::cout << " ";
+				cout << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 		else if (whileStatement) {
-			std::cout << "WHILE ";
+			cout << "WHILE ";
 			visit (whileStatement->cond);
-			std::cout << std::endl;
+			cout << endl;
 			visit (whileStatement->codeBlock);
 		}
 		else if (ifStatement) {
-			std::cout << "IF ";
+			cout << "IF ";
 			visit (ifStatement->cond);
-			std::cout << std::endl;
+			cout << endl;
 			visit (ifStatement->then_block);
-			std::cout << std::endl;
+			cout << endl;
 			if (ifStatement->else_block) {
-				std::cout << "ELSE" << std::endl;
+				cout << "ELSE" << endl;
 				visit (ifStatement->else_block);
-				std::cout << std::endl;
+				cout << endl;
 			}
 		}
 		else if (forStatement) {
-			std::cout << "FOR ";
+			cout << "FOR ";
 			visit(forStatement->init);
-			std::cout << ", ";
+			cout << ", ";
 			visit(forStatement->limit);
 			if (forStatement->step) {
-				std::cout << ", ";
+				cout << ", ";
 				visit(forStatement->step);
 			}
-			std::cout << std::endl;
+			cout << endl;
 			visit(forStatement->codeBlock);
 		}
 		else if (label) {
-			std::cout<<label->label_name<<":"<<std::endl;
+			cout<<label->label_name<<":"<<endl;
 		}
 		else if (goTo) {
-			std::cout<< "goto " << goTo->label_name;
+			cout<< "goto " << goTo->label_name;
 			if (goTo->cond) {
-				std::cout << " if ";
+				cout << " if ";
 				visit(goTo->cond);
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 		else if (printStatement) {
-			std::cout << "PRINT " << std::endl;
-			/* for (std::vector<ASTPrintable*>::iterator i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) { */
-			/* 	std::cout <<"PRINTING"; */
-			/* 	if ((*i)->id) { */
-			/* 		visit ((*i)->id); */
-			/* 	} */
-			/* 	else { */
-			/* 		std::cout << (*i)->text; */
-			/* 	} */
-			/* } */
-			/* std::cout << std::endl; */
+			cout << "PRINT ";
+			for (auto i = (*(printStatement->printable)).begin(); i !=(*(printStatement->printable)).end(); i++) {
+				if ((*i)->id == NULL)
+					cout << (*i)->text << " ";
+				else
+					visit((*i)->id);
+			}
+			cout << endl;
 		}
 		else {
-			std::cerr << "Unknown statement error";
+			cerr << "Unknown statement error";
 		}
 	}
 };
