@@ -4,12 +4,12 @@
   #include "ast.h"
   #include "visitor.h"
   extern "C" FILE *yyin;
-  extern "C" int yylex ();
-  extern "C" int yyparse ();
+  extern "C" int yylex();
+  extern "C" int yyparse();
 
   using namespace std;
 
-  void yyerror (char const *s);
+  void yyerror(char const *s);
   #include "lex.yy.c"
 %}
 
@@ -136,12 +136,12 @@ if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4); }
 		| 		IF cond '{' codelines '}' ELSE '{' codelines '}' { $$ = new ASTIfStatement($2, $4, $8); }
 %%
 
-void yyerror (char const *s)
+void yyerror(char const *s)
 {
-       fprintf (stderr, "%s\n", s);
+       fprintf(stderr, "%s\n", s);
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	if (argc == 1 ) {
 		fprintf(stderr, "Correct usage: bcc filename\n");

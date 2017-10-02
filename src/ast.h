@@ -1,5 +1,6 @@
 #ifndef _AST_H
 #define _AST_H
+
 #include <vector>
 #include <string>
 #include <map>
@@ -82,7 +83,7 @@ public:
 	ASTExpression *right_child;
 	BinOp op;
 
-	ASTBinaryExpression (ASTExpression *left, ASTExpression *right, BinOp op) {
+	ASTBinaryExpression(ASTExpression *left, ASTExpression *right, BinOp op) {
 		this->left_child = left;
 		this->right_child = right;
 		this->op = op;
@@ -95,7 +96,7 @@ public:
 	ASTExpression *right_child;
 	BoolOp op;
 
-	ASTBooleanExpression (ASTExpression *left, ASTExpression *right, BoolOp op) {
+	ASTBooleanExpression(ASTExpression *left, ASTExpression *right, BoolOp op) {
 		this->left_child = left;
 		this->right_child = right;
 		this->op = op;

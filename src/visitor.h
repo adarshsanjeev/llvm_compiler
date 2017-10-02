@@ -11,21 +11,21 @@ void visit(ASTExpression* ast) {
 
 class printableVisitor : public Visitor {
 public:
-	void visit (ASTProgram* ast) {
+	void visit(ASTProgram* ast) {
 		visit(ast->declBlock);
 		visit(ast->codeBlock);
 	}
-	void visit (ASTDeclBlock* ast) {
+	void visit(ASTDeclBlock* ast) {
 	}
-	void visit (ASTCodeBlock* ast) {
+	void visit(ASTCodeBlock* ast) {
 		cout << "Starting Code Block {" << endl;
-		for (vector<ASTStatement*>::iterator i = ast->statements->end()-1; i >= ast->statements->begin(); i--) {
+		for (auto i = ast->statements->end()-1; i >= ast->statements->begin(); i--) {
 			visit(*i);
 		}
 		cout << "} Ending Code Block" << endl;
 	}
 
-	void visit (ASTIdentifier* ast) {
+	void visit(ASTIdentifier* ast) {
 		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
@@ -39,7 +39,7 @@ public:
 		}
 	}
 
-	void visit (ASTPrintStatement* ast) {
+	void visit(ASTPrintStatement* ast) {
 		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
@@ -53,7 +53,7 @@ public:
 		}
 	}
 
-	void visit (ASTExpression* ast) {
+	void visit(ASTExpression* ast) {
 		ASTIntegerLiteral *int_literal = dynamic_cast<ASTIntegerLiteral *>(ast);
 		ASTBinaryExpression *bin_exp = dynamic_cast<ASTBinaryExpression *>(ast);
 		ASTBooleanExpression *bool_exp = dynamic_cast<ASTBooleanExpression *>(ast);
@@ -81,7 +81,7 @@ public:
 		}
 	}
 
-	void visit (ASTStatement* ast) {
+	void visit(ASTStatement* ast) {
 		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
 		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
 		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
@@ -100,7 +100,7 @@ public:
 		}
 		else if (readStatement) {
 			cout << "Read ";
-			for (vector<ASTIdentifier*>::iterator i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
+			for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
 				visit(*i);
 				cout << " ";
 			}
@@ -108,19 +108,19 @@ public:
 		}
 		else if (whileStatement) {
 			cout << "WHILE ";
-			visit (whileStatement->cond);
+			visit(whileStatement->cond);
 			cout << endl;
-			visit (whileStatement->codeBlock);
+			visit(whileStatement->codeBlock);
 		}
 		else if (ifStatement) {
 			cout << "IF ";
-			visit (ifStatement->cond);
+			visit(ifStatement->cond);
 			cout << endl;
-			visit (ifStatement->then_block);
+			visit(ifStatement->then_block);
 			cout << endl;
 			if (ifStatement->else_block) {
 				cout << "ELSE" << endl;
-				visit (ifStatement->else_block);
+				visit(ifStatement->else_block);
 				cout << endl;
 			}
 		}
