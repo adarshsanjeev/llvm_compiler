@@ -135,7 +135,7 @@ relop:  CMP { $$ = BoolOp::EQUALEQUAL; }
 
 while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
 for: 			FOR assignment ',' cond '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
-		| 		FOR assignment ',' cond ',' expr '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
+		| 		FOR assignment ',' cond ',' assignment '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
 if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4); }
 		| 		IF cond '{' codelines '}' ELSE '{' codelines '}' { $$ = new ASTIfStatement($2, $4, $8); }
 %%

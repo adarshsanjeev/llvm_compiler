@@ -6,11 +6,9 @@ declblock {
 codeblock{
 	x = 3 + 3;
 	y = x - 5;
-	if (2>3) {
-	   z = 3;
-	}
-	else {
-		z = 4;
+	for z=1, z<10, z=z+1{
+		z = z+1;
+		print z;
 	}
 	println "HELLO", "WORLD", x, z;
 }

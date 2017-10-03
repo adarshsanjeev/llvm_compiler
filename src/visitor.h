@@ -1,9 +1,9 @@
 #ifndef _VISITOR_H
 #define _VISITOR_H
+
 ASTProgram *root = NULL;
 
 class Visitor {
-
 };
 
 void visit(ASTExpression* ast) {
@@ -204,7 +204,7 @@ void print_map() {
 		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
 		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
 		ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast);
-		/* ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast); */
+		ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast);
 		/* ASTLabel *label = dynamic_cast<ASTLabel *>(ast); */
 		/* ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast); */
 		ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast);
@@ -243,6 +243,14 @@ void print_map() {
 		else if (whileStatement) {
 			while (interpret(whileStatement->cond)) {
 				interpret(whileStatement->codeBlock);
+			}
+		}
+		else if (forStatement) {
+			interpret(forStatement->init);
+			while (interpret(forStatement->limit)) {
+				interpret(forStatement->codeBlock);
+				if (forStatement->step)
+					interpret(forStatement->step);
 			}
 		}
 	}

@@ -4,7 +4,7 @@ declblock {
 }
 
 codeblock{
-	read x;
+	read x;//This is a comment
 	read y, z;
 	read a[20];
 	x = 3 + 3;

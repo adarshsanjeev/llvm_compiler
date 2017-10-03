@@ -50,6 +50,8 @@ codeblock {
 	return '}';
 }
 
+\/\/[^\n]* {}
+
 int {
 	//printf("int keyword read\n");
 	return INT;

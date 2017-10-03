@@ -219,9 +219,9 @@ class ASTForStatement : public ASTStatement {
 public:
 	ASTStatement *init;
 	ASTExpression *limit;
-	ASTExpression *step;
+	ASTStatement *step;
 	ASTCodeBlock *codeBlock;
-	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTExpression *step, vector<ASTStatement*> *statements) {
+	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTStatement *step, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
 			cerr << "Found non boolean expression" << endl;
