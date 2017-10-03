@@ -171,8 +171,37 @@ public:
 
 class interpreterVisitor : public Visitor {
 public:
-	interpreterVisitor(ASTProgram *ast) {
+	map<ASTIdentifier*, int> variableTable;
 
+	void interpret(ASTProgram *ast) {
+		interpret(ast->declBlock);
+		interpret(ast->codeBlock);
+	}
+
+	void interpret(ASTDeclBlock *ast) {
+		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
+			variableTable[*i] = 0;
+		}
+	}
+
+	void interpret(ASTCodeBlock *ast) {
+		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
+			interpret(*i);
+		}
+	}
+
+	void interpret(ASTStatement *ast) {
+		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
+		/* ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast); */
+		/* ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast); */
+		/* ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast); */
+		/* ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast); */
+		/* ASTLabel *label = dynamic_cast<ASTLabel *>(ast); */
+		/* ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast); */
+		/* ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast); */
+
+		if (assignmentStatement) {
+		}
 	}
 };
 

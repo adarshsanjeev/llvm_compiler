@@ -103,7 +103,7 @@ codeline: 		assignment ';' { $$ = $1; }
 		| 		if { $$ = $1; }
 		| 		label { $$ = $1; }
 		| 		goto ';' { $$ = $1; }
-		| ';'
+//				 		| ';'
 
 label: 			IDENTIFIER ':' { $$ = new ASTLabel($1); }
 goto: 			GOTO IDENTIFIER { $$ = new ASTGoToStatement($2); }
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 
 	yyparse();
 
-	printableVisitor *visitor = new printableVisitor();
+	interpreterVisitor *visitor = new interpreterVisitor();
 	if (root)
-		visitor->visit(root);
+		visitor->interpret(root);
 }
