@@ -201,9 +201,9 @@ void print_map() {
 
 	void interpret(ASTStatement *ast) {
 		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
-		/* ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast); */
-		/* ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast); */
-		/* ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast); */
+		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
+		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
+		ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast);
 		/* ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast); */
 		/* ASTLabel *label = dynamic_cast<ASTLabel *>(ast); */
 		/* ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast); */
@@ -227,6 +227,24 @@ void print_map() {
 			}
 				cout << printStatement->delim;
 		}
+		else if (readStatement) {
+			for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
+				cin >> variableTable[**i];
+			}
+		}
+		else if (ifStatement) {
+			if (interpret(ifStatement->cond)) {
+				interpret(ifStatement->then_block);
+			}
+			else {
+				interpret(ifStatement->else_block);
+			}
+		}
+		else if (whileStatement) {
+			while (interpret(whileStatement->cond)) {
+				interpret(whileStatement->codeBlock);
+			}
+		}
 	}
 
 	int interpret(ASTExpression *ast) {
@@ -240,7 +258,6 @@ void print_map() {
 		}
 		else if (id) {
 			if (variableTable.find(*id) != variableTable.end()) {
-				ASTIdentifier *single_id = dynamic_cast<ASTIdentifier *>(ast);
 				return variableTable[*id];
 			}
 			else {
@@ -261,21 +278,21 @@ void print_map() {
 		}
 		else if (bool_exp) {
 			switch(bool_exp->op) {
-			case LESSTHAN: return interpret(bin_exp->left_child) < interpret(bin_exp->right_child);
+			case LESSTHAN: return interpret(bool_exp->left_child) < interpret(bool_exp->right_child);
 				break;
-			case GREATERTHAN: return interpret(bin_exp->left_child) > interpret(bin_exp->right_child);
+			case GREATERTHAN: return interpret(bool_exp->left_child) > interpret(bool_exp->right_child);
 				break;
-			case LESSEQUAL: return interpret(bin_exp->left_child) <= interpret(bin_exp->right_child);
+			case LESSEQUAL: return interpret(bool_exp->left_child) <= interpret(bool_exp->right_child);
 				break;
-			case GREATEREQUAL: return interpret(bin_exp->left_child) >= interpret(bin_exp->right_child);
+			case GREATEREQUAL: return interpret(bool_exp->left_child) >= interpret(bool_exp->right_child);
 				break;
-			case NOTEQUAL: return interpret(bin_exp->left_child) != interpret(bin_exp->right_child);
+			case NOTEQUAL: return interpret(bool_exp->left_child) != interpret(bool_exp->right_child);
 				break;
-			case EQUALEQUAL: return interpret(bin_exp->left_child) == interpret(bin_exp->right_child);
+			case EQUALEQUAL: return interpret(bool_exp->left_child) == interpret(bool_exp->right_child);
 				break;
-			case AND_OP: return interpret(bin_exp->left_child) and interpret(bin_exp->right_child);
+			case AND_OP: return interpret(bool_exp->left_child) and interpret(bool_exp->right_child);
 				break;
-			case OR_OP: return interpret(bin_exp->left_child) or interpret(bin_exp->right_child);
+			case OR_OP: return interpret(bool_exp->left_child) or interpret(bool_exp->right_child);
 				break;
 			}
 		}
