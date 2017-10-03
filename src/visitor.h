@@ -171,8 +171,15 @@ public:
 
 
 class interpreterVisitor : public Visitor {
-map<ASTIdentifier*, int> variableTable;
+map<ASTIdentifier, int> variableTable;
 public:
+
+void print_map() {
+		for (auto i = variableTable.begin(); i != variableTable.end(); i++) {
+			cout << (*i).first.id << "=" << (*i).second << ", ";
+		}
+		cout << endl;
+	}
 
 	void interpret(ASTProgram *ast) {
 		interpret(ast->declBlock);
@@ -181,13 +188,14 @@ public:
 
 	void interpret(ASTDeclBlock *ast) {
 		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
-			variableTable[*i] = 0;
+			variableTable[**i] = 0;
 		}
 	}
 
 	void interpret(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
 			interpret(*i);
+			print_map();
 		}
 	}
 
@@ -202,9 +210,8 @@ public:
 		/* ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast); */
 
 		if (assignmentStatement) {
-			if (variableTable.find(assignmentStatement->id) == variableTable.end()) {
-				variableTable[assignmentStatement->id] = interpret(assignmentStatement->rhs);
-				cout << variableTable[assignmentStatement->id] << endl;
+			if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
+				variableTable[*(assignmentStatement->id)] = interpret(assignmentStatement->rhs);
 			}
 			else {
 				cerr << "Undeclared variable used:" << endl;
@@ -222,10 +229,9 @@ public:
 			return int_literal->value;
 		}
 		else if (id) {
-			if (variableTable.find(id) == variableTable.end()) {
+			if (variableTable.find(*id) != variableTable.end()) {
 				ASTIdentifier *single_id = dynamic_cast<ASTIdentifier *>(ast);
-				cout << single_id->id << "=" << variableTable[id] << endl;
-				return variableTable[id];
+				return variableTable[*id];
 			}
 			else {
 				cerr << "Undeclared variable used:" << endl;
@@ -265,5 +271,38 @@ public:
 		}
 	}
 };
+
+/* class SymbolTable : public ASTNode { */
+/* public: */
+/* 	void addToMap(vector<ASTIdentifier*> *ids) { */
+/* 		for (auto i = ids->begin(); i!=ids->end(); i++) { */
+/* 			ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(*i); */
+/* 			ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(*i); */
+/* 			if (single_id != NULL) { */
+/* 				if (checkIfDeclared(single_id)) */
+/* 					cerr<<"Already Declared" << endl; */
+/* 				else */
+/* 					variableTable[single_id->id] = 0; */
+/* 			} */
+/* 			if (array_id != NULL) { */
+/* 				if (checkIfDeclared(array_id)) */
+/* 					cerr<<"Already Declared" << endl; */
+/* 				else */
+/* 					variableTable[array_id->id] = 0; */
+/* 			} */
+/* 		} */
+/* 	} */
+/* 	bool checkIfDeclared (ASTIdentifier *id) { */
+/* 		ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(id); */
+/* 		ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(id); */
+/* 		if (single_id != NULL) { */
+/* 			variableTable.find(single_id->id) != variableTable.end(); */
+/* 		} */
+/* 		if (array_id != NULL) { */
+/* 			variableTable.find(array_id->id) != variableTable.end(); */
+/* 		} */
+/* 		return false; */
+/* 	} */
+/* }*symbolTable; */
 
 #endif

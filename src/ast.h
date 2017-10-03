@@ -108,6 +108,10 @@ public:
 	ASTIdentifier(string id) {
 		this->id = id;
 	}
+	 bool operator<( const ASTIdentifier& other) const
+      {
+		  return this->id < other.id;
+	  }
 };
 
 class ASTArrayIdentifier : public ASTIdentifier {
@@ -125,39 +129,6 @@ public:
 		this->declarations = declarations;
 	}
 };
-
-/* class SymbolTable : public ASTNode { */
-/* public: */
-/* 	void addToMap(vector<ASTIdentifier*> *ids) { */
-/* 		for (auto i = ids->begin(); i!=ids->end(); i++) { */
-/* 			ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(*i); */
-/* 			ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(*i); */
-/* 			if (single_id != NULL) { */
-/* 				if (checkIfDeclared(single_id)) */
-/* 					cerr<<"Already Declared" << endl; */
-/* 				else */
-/* 					variableTable[single_id->id] = 0; */
-/* 			} */
-/* 			if (array_id != NULL) { */
-/* 				if (checkIfDeclared(array_id)) */
-/* 					cerr<<"Already Declared" << endl; */
-/* 				else */
-/* 					variableTable[array_id->id] = 0; */
-/* 			} */
-/* 		} */
-/* 	} */
-/* 	bool checkIfDeclared (ASTIdentifier *id) { */
-/* 		ASTSingleIdentifier* single_id = dynamic_cast<ASTSingleIdentifier *>(id); */
-/* 		ASTArrayIdentifier* array_id = dynamic_cast<ASTArrayIdentifier *>(id); */
-/* 		if (single_id != NULL) { */
-/* 			variableTable.find(single_id->id) != variableTable.end(); */
-/* 		} */
-/* 		if (array_id != NULL) { */
-/* 			variableTable.find(array_id->id) != variableTable.end(); */
-/* 		} */
-/* 		return false; */
-/* 	} */
-/* }*symbolTable; */
 
 class ASTStatement : public ASTNode {
 public:
