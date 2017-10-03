@@ -32,7 +32,7 @@ public:
 	}
 
 	void visit(ASTIdentifier* ast) {
-		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
+		ASTIdentifier *single_id = dynamic_cast<ASTIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
 			cout << single_id->id;
@@ -46,7 +46,7 @@ public:
 	}
 
 	void visit(ASTPrintStatement* ast) {
-		ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
+		ASTIdentifier *single_id = dynamic_cast<ASTIdentifier *>(ast);
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (single_id) {
 			cout << single_id->id;
@@ -223,7 +223,7 @@ public:
 		}
 		else if (id) {
 			if (variableTable.find(id) == variableTable.end()) {
-				ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
+				ASTIdentifier *single_id = dynamic_cast<ASTIdentifier *>(ast);
 				cout << single_id->id << "=" << variableTable[id] << endl;
 				return variableTable[id];
 			}

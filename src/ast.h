@@ -103,22 +103,17 @@ public:
 };
 
 class ASTIdentifier : public ASTExpression {
-};
-
-class ASTSingleIdentifier : public ASTIdentifier {
 public:
 	string id;
-	ASTSingleIdentifier(string id) {
+	ASTIdentifier(string id) {
 		this->id = id;
 	}
 };
 
 class ASTArrayIdentifier : public ASTIdentifier {
 public:
-	string id;
 	ASTExpression* index;
-	ASTArrayIdentifier(string id, ASTExpression *index) {
-		this->id = id;
+    ASTArrayIdentifier(string id, ASTExpression *index) : ASTIdentifier (id) {
 		this->index = index;
 	}
 };
