@@ -97,7 +97,8 @@ goto {
 
 \"[^"]*\" {
 	//printf("print string\n");
-	yylval.sval = strdup(yytext);
+    yytext[yyleng-1] = '\0';
+	yylval.sval = strdup(yytext+1);
 	return STRING;
 }
 

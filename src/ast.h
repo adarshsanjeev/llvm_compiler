@@ -149,6 +149,7 @@ class ASTPrintable : public ASTNode {
 public:
 	string text;
 	ASTIdentifier *id;
+
 	ASTPrintable(string text) {
 		this->text = text;
 		this->id = NULL;
@@ -160,9 +161,11 @@ public:
 
 class ASTPrintStatement : public ASTStatement {
 public:
+	string delim = "";
 	vector<ASTPrintable*> *printable;
-	ASTPrintStatement(vector<ASTPrintable*> *printable) {
+	ASTPrintStatement(vector<ASTPrintable*> *printable, string delim = "") {
 		this->printable = printable;
+		this->delim = delim;
 	}
 };
 

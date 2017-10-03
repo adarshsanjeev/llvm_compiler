@@ -195,7 +195,7 @@ void print_map() {
 	void interpret(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
 			interpret(*i);
-			print_map();
+			// print_map();
 		}
 	}
 
@@ -207,7 +207,7 @@ void print_map() {
 		/* ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast); */
 		/* ASTLabel *label = dynamic_cast<ASTLabel *>(ast); */
 		/* ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast); */
-		/* ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast); */
+		ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast);
 
 		if (assignmentStatement) {
 			if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
@@ -216,6 +216,16 @@ void print_map() {
 			else {
 				cerr << "Undeclared variable used:" << endl;
 			}
+		}
+		else if (printStatement) {
+			for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
+				if ((*i)->id == NULL)
+					cout << (*i)->text;
+				else
+					cout << variableTable[*((*i)->id)];
+				cout << " ";
+			}
+				cout << printStatement->delim;
 		}
 	}
 
