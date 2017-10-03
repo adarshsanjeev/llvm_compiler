@@ -16,6 +16,12 @@ public:
 		visit(ast->codeBlock);
 	}
 	void visit(ASTDeclBlock* ast) {
+		cout << "Declarations" << endl;
+		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
+			visit(*i);
+			cout << " ";
+		}
+		cout << endl;
 	}
 	void visit(ASTCodeBlock* ast) {
 		cout << "Starting Code Block {" << endl;
@@ -160,6 +166,13 @@ public:
 		else {
 			cerr << "Unknown statement error";
 		}
+	}
+};
+
+class interpreterVisitor : public Visitor {
+public:
+	interpreterVisitor(ASTProgram *ast) {
+
 	}
 };
 

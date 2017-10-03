@@ -17,6 +17,7 @@
 	int ival;
 	char* sval;
 	ASTCodeBlock *codeBlock;
+	ASTDeclBlock *declBlock;
 	ASTProgram *program;
 	ASTStatement *statement;
 	vector<ASTStatement*> *statements;
@@ -50,6 +51,9 @@
 %type	<statement>		print
 %type	<printable>		value
 %type	<printables>	value_list;
+%type	<ids>			declaration;
+%type	<ids>	declarations;
+%type	<declBlock>		decl_block;
 
 %token NUMBER
 %token STRING
@@ -77,13 +81,13 @@
 %left '+' '-'
 %left '*' '/'
 %%
-program: 		decl_block code_block { $$ = new ASTProgram(new ASTDeclBlock(), $2); root = $$; }
+program: 		decl_block code_block { $$ = new ASTProgram($1, $2); root = $$; }
 
-decl_block: 	DECL_BLOCK '{' declarations '}'
+decl_block: 	DECL_BLOCK '{' declarations '}' { $$ = new ASTDeclBlock($3); }
 code_block: 	CODE_BLOCK '{' codelines '}' { $$ = new ASTCodeBlock($3); }
 
-declarations: 	declaration ';' declarations | %empty
-declaration: 	INT identifiers { symbolTable->addToMap($2); }
+declarations: 	declaration ';' declarations { $3->insert($3->end(), $1->begin(), $1->end()); $$ = $3; } | %empty { $$ = new vector<ASTIdentifier*>; }
+declaration: 	INT identifiers { $$ = $2; }
 
 identifier: 	IDENTIFIER { $$ = new ASTSingleIdentifier($1); }
 		| 		IDENTIFIER '[' expr ']' { $$ = new ASTArrayIdentifier($1, $3); }

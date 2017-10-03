@@ -20,6 +20,8 @@ class ASTIntegerLiteral;
 class ASTStatement;
 class ASTAssignmentStatement;
 
+class ASTIdentifier;
+
 enum BinOp {
     plus,
     minus,
@@ -49,9 +51,6 @@ public:
 		this->declBlock = declBlock;
 		this->codeBlock = codeBlock;
 	}
-};
-
-class ASTDeclBlock : public ASTNode {
 };
 
 class ASTCodeBlock : public ASTNode {
@@ -124,6 +123,14 @@ public:
 	}
 };
 
+class ASTDeclBlock : public ASTNode {
+public:
+	vector<ASTIdentifier*> *declarations;
+	ASTDeclBlock(vector<ASTIdentifier*> *declarations) {
+		this->declarations = declarations;
+	}
+};
+
 map<string, int> variableTable;
 
 class SymbolTable : public ASTNode {
@@ -155,6 +162,7 @@ public:
 		if (array_id != NULL) {
 			variableTable.find(array_id->id) != variableTable.end();
 		}
+		return false;
 	}
 }*symbolTable;
 
@@ -168,10 +176,6 @@ public:
 	ASTIdentifier *id;
 	ASTExpression *rhs;
 	ASTAssignmentStatement(ASTIdentifier *id, ASTExpression *rhs) {
-		if (!symbolTable->checkIfDeclared(id)) {
-			cerr << "Undeclared variable used" << endl;
-			exit(-1);
-		}
 		this->id = id;
 		this->rhs = rhs;
 	}
@@ -186,10 +190,6 @@ public:
 		this->id = NULL;
 	}
 	ASTPrintable(ASTIdentifier *id) {
-		if (!symbolTable->checkIfDeclared(id)) {
-			cerr << "Undeclared variable used" << endl;
-			exit(-1);
-		}
 		this->id = id;
 	}
 };
