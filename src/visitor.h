@@ -169,9 +169,10 @@ public:
 	}
 };
 
+
 class interpreterVisitor : public Visitor {
+map<ASTIdentifier*, int> variableTable;
 public:
-	map<ASTIdentifier*, int> variableTable;
 
 	void interpret(ASTProgram *ast) {
 		interpret(ast->declBlock);
@@ -201,6 +202,66 @@ public:
 		/* ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast); */
 
 		if (assignmentStatement) {
+			if (variableTable.find(assignmentStatement->id) == variableTable.end()) {
+				variableTable[assignmentStatement->id] = interpret(assignmentStatement->rhs);
+				cout << variableTable[assignmentStatement->id] << endl;
+			}
+			else {
+				cerr << "Undeclared variable used:" << endl;
+			}
+		}
+	}
+
+	int interpret(ASTExpression *ast) {
+		ASTIntegerLiteral *int_literal = dynamic_cast<ASTIntegerLiteral *>(ast);
+		ASTBinaryExpression *bin_exp = dynamic_cast<ASTBinaryExpression *>(ast);
+		ASTBooleanExpression *bool_exp = dynamic_cast<ASTBooleanExpression *>(ast);
+		ASTIdentifier *id = dynamic_cast<ASTIdentifier *>(ast);
+
+		if (int_literal) {
+			return int_literal->value;
+		}
+		else if (id) {
+			if (variableTable.find(id) == variableTable.end()) {
+				ASTSingleIdentifier *single_id = dynamic_cast<ASTSingleIdentifier *>(ast);
+				cout << single_id->id << "=" << variableTable[id] << endl;
+				return variableTable[id];
+			}
+			else {
+				cerr << "Undeclared variable used:" << endl;
+			}
+		}
+		else if (bin_exp) {
+			switch(bin_exp->op) {
+			case PLUS: return interpret(bin_exp->left_child) + interpret(bin_exp->right_child);
+				break;
+			case MINUS: return interpret(bin_exp->left_child) - interpret(bin_exp->right_child);
+				break;
+			case PRODUCT: return interpret(bin_exp->left_child) * interpret(bin_exp->right_child);
+				break;
+			case DIVIDE: return interpret(bin_exp->left_child) / interpret(bin_exp->right_child);
+				break;
+			}
+		}
+		else if (bool_exp) {
+			switch(bool_exp->op) {
+			case LESSTHAN: return interpret(bin_exp->left_child) < interpret(bin_exp->right_child);
+				break;
+			case GREATERTHAN: return interpret(bin_exp->left_child) > interpret(bin_exp->right_child);
+				break;
+			case LESSEQUAL: return interpret(bin_exp->left_child) <= interpret(bin_exp->right_child);
+				break;
+			case GREATEREQUAL: return interpret(bin_exp->left_child) >= interpret(bin_exp->right_child);
+				break;
+			case NOTEQUAL: return interpret(bin_exp->left_child) != interpret(bin_exp->right_child);
+				break;
+			case EQUALEQUAL: return interpret(bin_exp->left_child) == interpret(bin_exp->right_child);
+				break;
+			case AND_OP: return interpret(bin_exp->left_child) and interpret(bin_exp->right_child);
+				break;
+			case OR_OP: return interpret(bin_exp->left_child) or interpret(bin_exp->right_child);
+				break;
+			}
 		}
 	}
 };

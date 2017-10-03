@@ -94,7 +94,7 @@ identifier: 	IDENTIFIER { $$ = new ASTSingleIdentifier($1); }
 identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 		| 		identifier ',' identifiers { $3->push_back($1); $$ = $3; }
 
-codelines: 		codeline codelines { $2->push_back($1); $$ = $2; } | %empty { $$ = new vector<ASTStatement*>; }
+codelines: 		codelines codeline { $1->push_back($2); $$ = $1; } | %empty { $$ = new vector<ASTStatement*>; }
 codeline: 		assignment ';' { $$ = $1; }
 		| 		print ';' { $$ = $1; }
 		| 		read ';' { $$ = $1; }
@@ -116,22 +116,22 @@ read: 			READ identifiers { $$ = new ASTReadStatement($2); }
 value_list: 	value { $$ = new vector<ASTPrintable*>; $$->push_back($1); } | value ',' value_list { $3->push_back($1); $$=$3; }
 value:			STRING { $$ = new ASTPrintable($1); }
 		|		identifier { $$ = new ASTPrintable($1); }
-expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::plus); visit($$);}
-		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::minus); }
-		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::product); }
-		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::divide); }
+expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PLUS); visit($$);}
+		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::MINUS); }
+		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PRODUCT); }
+		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::DIVIDE); }
 		|       '(' expr ')' { $$ = $2; }
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
 		|		identifier { $$ = $1; }
 
 cond:   expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
 		| '(' expr relop expr ')' { $$ = new ASTBooleanExpression($2, $4, $3); }
-relop:  CMP { $$ = BoolOp::equalequal; }
-		|		NE { $$ = BoolOp::notequal; }
-		|       '>' { $$ = BoolOp::greaterthan; }
-		|   	'<' { $$ = BoolOp::lessthan; }
-		|		GE { $$ = BoolOp::greaterequal; }
-		|		LE { $$ = BoolOp::lessequal; }
+relop:  CMP { $$ = BoolOp::EQUALEQUAL; }
+		|		NE { $$ = BoolOp::NOTEQUAL; }
+		|       '>' { $$ = BoolOp::GREATERTHAN; }
+		|   	'<' { $$ = BoolOp::LESSTHAN; }
+		|		GE { $$ = BoolOp::GREATEREQUAL; }
+		|		LE { $$ = BoolOp::LESSEQUAL; }
 
 while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
 for: 			FOR assignment ',' cond '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
