@@ -15,18 +15,29 @@ class ASTCodeBlock;
 
 class ASTExpression;
 class ASTBinaryExpression;
+class ASTBooleanExpression;
 class ASTIntegerLiteral;
+
+class ASTIdentifier;
+class ASTArrayIdentifier;
+class ASTPrintable;
 
 class ASTStatement;
 class ASTAssignmentStatement;
-
-class ASTIdentifier;
+class ASTPrintStatement;
+class ASTLabel;
+class ASTGoToStatement;
+class ASTIfStatement;
+class ASTWhileStatement;
+class ASTForStatement;
 
 enum BinOp {
     PLUS,
     MINUS,
     PRODUCT,
-    DIVIDE
+    DIVIDE,
+	MODULUS,
+	EXPONENT
 };
 
 enum BoolOp {
@@ -45,11 +56,11 @@ class ASTNode {
 
 class ASTProgram : public ASTNode {
 public:
-	ASTDeclBlock *declBlock;
-	ASTCodeBlock *codeBlock;
-	ASTProgram(ASTDeclBlock *declBlock, ASTCodeBlock *codeBlock) {
-		this->declBlock = declBlock;
-		this->codeBlock = codeBlock;
+	ASTDeclBlock *decl_block;
+	ASTCodeBlock *code_block;
+	ASTProgram(ASTDeclBlock *decl_block, ASTCodeBlock *code_block) {
+		this->decl_block = decl_block;
+		this->code_block = code_block;
 	}
 };
 
@@ -202,7 +213,7 @@ public:
 class ASTWhileStatement : public ASTStatement {
 public:
 	ASTBooleanExpression *cond;
-	ASTCodeBlock *codeBlock;
+	ASTCodeBlock *code_block;
 	ASTWhileStatement(ASTExpression *cond, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(cond);
 		if (!bool_exp) {
@@ -210,7 +221,7 @@ public:
 		}
 		else {
 			this->cond = bool_exp;
-			this->codeBlock = new ASTCodeBlock(statements);
+			this->code_block = new ASTCodeBlock(statements);
 		}
 	}
 };
@@ -220,7 +231,7 @@ public:
 	ASTStatement *init;
 	ASTExpression *limit;
 	ASTStatement *step;
-	ASTCodeBlock *codeBlock;
+	ASTCodeBlock *code_block;
 	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTStatement *step, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
@@ -230,7 +241,7 @@ public:
 			this->init = init;
 			this->limit = bool_exp;
 			this->step = step;
-			this->codeBlock = new ASTCodeBlock(statements);
+			this->code_block = new ASTCodeBlock(statements);
 		}
 	}
 	ASTForStatement(ASTStatement *init, ASTExpression *limit, vector<ASTStatement*> *statements) {
@@ -241,7 +252,7 @@ public:
 		else {
 			this->init = init;
 			this->limit = bool_exp;
-			this->codeBlock = new ASTCodeBlock(statements);
+			this->code_block = new ASTCodeBlock(statements);
 			this->step = NULL;
 		}
 	}

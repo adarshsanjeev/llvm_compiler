@@ -3,6 +3,7 @@
   #include <string>
   #include "ast.h"
   #include "visitor.h"
+  #include "print.h"
   extern "C" FILE *yyin;
   extern "C" int yylex();
   extern "C" int yyparse();
@@ -16,13 +17,14 @@
 %union {
 	int ival;
 	char* sval;
-	ASTCodeBlock *codeBlock;
-	ASTDeclBlock *declBlock;
+	ASTCodeBlock *code_block;
+	ASTDeclBlock *decl_block;
 	ASTProgram *program;
 	ASTStatement *statement;
 	vector<ASTStatement*> *statements;
 	ASTIdentifier *id;
 	vector<ASTIdentifier*> *ids;
+	ASTBooleanExpression *bool_expr;
 	ASTExpression *expr;
 	BoolOp boolOp;
 	ASTPrintable *printable;
@@ -42,7 +44,7 @@
 %type	<statement>		while
 %type	<statement>		codeline
 %type	<statements>	codelines
-%type	<codeBlock>		code_block
+%type	<code_block>	code_block
 %type	<program>		program
 %type	<statement>		if
 %type	<statement>		for
@@ -52,8 +54,8 @@
 %type	<printable>		value
 %type	<printables>	value_list;
 %type	<ids>			declaration;
-%type	<ids>	declarations;
-%type	<declBlock>		decl_block;
+%type	<ids>			declarations;
+%type	<decl_block>	decl_block;
 
 %token NUMBER
 %token STRING
@@ -80,6 +82,8 @@
 
 %left '+' '-'
 %left '*' '/'
+%precedence NEG
+
 %%
 program: 		decl_block code_block { $$ = new ASTProgram($1, $2); root = $$; }
 
@@ -103,7 +107,7 @@ codeline: 		assignment ';' { $$ = $1; }
 		| 		if { $$ = $1; }
 		| 		label { $$ = $1; }
 		| 		goto ';' { $$ = $1; }
-//				 		| ';'
+		|       ';' { $$ = NULL; }
 
 label: 			IDENTIFIER ':' { $$ = new ASTLabel($1); }
 goto: 			GOTO IDENTIFIER { $$ = new ASTGoToStatement($2); }
@@ -116,17 +120,18 @@ read: 			READ identifiers { $$ = new ASTReadStatement($2); }
 value_list: 	value { $$ = new vector<ASTPrintable*>; $$->push_back($1); } | value_list ',' value { $1->push_back($3); $$=$1; }
 value:			STRING { $$ = new ASTPrintable($1); }
 		|		identifier { $$ = new ASTPrintable($1); }
-expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PLUS); visit($$);}
+expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PLUS);}
 		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::MINUS); }
 		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PRODUCT); }
 		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::DIVIDE); }
-		|       '(' expr ')' { $$ = $2; }
+		|       '-' expr %prec NEG { $$ = new ASTBinaryExpression(new ASTIntegerLiteral(-1), $2, BinOp::PRODUCT); }
+		|       '('expr ')' { $$ = $2; }
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
 		|		identifier { $$ = $1; }
 
-cond:   expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
-		| '(' expr relop expr ')' { $$ = new ASTBooleanExpression($2, $4, $3); }
-relop:  CMP { $$ = BoolOp::EQUALEQUAL; }
+cond:   		expr relop expr { $$ = new ASTBooleanExpression($1, $3, $2); }
+		| '(' cond ')' { $$ = $2; }
+relop:  		CMP { $$ = BoolOp::EQUALEQUAL; }
 		|		NE { $$ = BoolOp::NOTEQUAL; }
 		|       '>' { $$ = BoolOp::GREATERTHAN; }
 		|   	'<' { $$ = BoolOp::LESSTHAN; }
@@ -136,6 +141,8 @@ relop:  CMP { $$ = BoolOp::EQUALEQUAL; }
 while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
 for: 			FOR assignment ',' cond '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
 		| 		FOR assignment ',' cond ',' assignment '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
+		|		FOR '(' assignment ',' cond ')' '{' codelines '}' { $$ = new ASTForStatement($3, $5, $8); }
+		| 		FOR '(' assignment ',' cond ',' assignment ')' '{' codelines '}' { $$ = new ASTForStatement($3, $5, $7, $10); }
 if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4); }
 		| 		IF cond '{' codelines '}' ELSE '{' codelines '}' { $$ = new ASTIfStatement($2, $4, $8); }
 %%

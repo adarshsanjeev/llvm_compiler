@@ -129,6 +129,16 @@ goto {
 	return '/';
 }
 
+\%	    {
+	//printf("% read\n");
+	return '%';
+}
+
+\^	    {
+	//printf("^ read\n");
+	return '^';
+}
+
 \=\= {
     return CMP;
 }
