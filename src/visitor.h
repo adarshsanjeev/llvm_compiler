@@ -5,11 +5,8 @@
 
 ASTProgram *root = NULL;
 
-class Visitor {
-};
-
 class interpreterVisitor : public Visitor {
-map<ASTIdentifier, int> variableTable;
+	map<ASTIdentifier, int> variableTable;
 public:
 
     void print_map() {
@@ -19,12 +16,12 @@ public:
 		cout << endl;
 	}
 
-	void interpret(ASTProgram *ast) {
-		interpret(ast->decl_block);
-		interpret(ast->code_block);
+	void visit(ASTProgram *ast) {
+		(ast->decl_block->accept(this));
+		(ast->code_block->accept(this));
 	}
 
-	void interpret(ASTDeclBlock *ast) {
+	void visit(ASTDeclBlock *ast) {
 		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
 			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
 			if (array_id) {
@@ -41,14 +38,14 @@ public:
 		}
 	}
 
-	void interpret(ASTCodeBlock *ast) {
+	void visit(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
-			interpret(*i);
+			((*i)->accept(this));
 			// print_map();
 		}
 	}
 
-	void interpret(ASTStatement *ast) {
+	void visit(ASTStatement *ast) {
 		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
 		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
 		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
@@ -60,7 +57,7 @@ public:
 
 		if (assignmentStatement) {
 			if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
-				variableTable[*(assignmentStatement->id)] = interpret(assignmentStatement->rhs);
+				variableTable[*(assignmentStatement->id)] = (assignmentStatement->rhs->accept(this));
 			}
 			else {
 				cerr << "Compilation error: Undeclared variable used:" << (assignmentStatement->id)->id << endl;
@@ -75,7 +72,7 @@ public:
 					cout << variableTable[*((*i)->id)];
 				cout << " ";
 			}
-				cout << printStatement->delim;
+			cout << printStatement->delim;
 		}
 		else if (readStatement) {
 			for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
@@ -83,29 +80,29 @@ public:
 			}
 		}
 		else if (ifStatement) {
-			if (interpret(ifStatement->cond)) {
-				interpret(ifStatement->then_block);
+			if (((ASTExpression*)ifStatement->cond)->accept(this)) {
+				(ifStatement->then_block->accept(this));
 			}
 			else {
-				interpret(ifStatement->else_block);
+				(ifStatement->else_block->accept(this));
 			}
 		}
 		else if (whileStatement) {
-			while (interpret(whileStatement->cond)) {
-				interpret(whileStatement->code_block);
+			while (((ASTExpression*)whileStatement->cond)->accept(this)) {
+				(whileStatement->code_block->accept(this));
 			}
 		}
 		else if (forStatement) {
-			interpret(forStatement->init);
-			while (interpret(forStatement->limit)) {
-				interpret(forStatement->code_block);
+			(forStatement->init->accept(this));
+			while ((forStatement->limit->accept(this))) {
+				(forStatement->code_block->accept(this));
 				if (forStatement->step)
-					interpret(forStatement->step);
+					(forStatement->step->accept(this));
 			}
 		}
 	}
 
-	int interpret(ASTExpression *ast) {
+	int visit(ASTExpression *ast) {
 		ASTIntegerLiteral *int_literal = dynamic_cast<ASTIntegerLiteral *>(ast);
 		ASTBinaryExpression *bin_exp = dynamic_cast<ASTBinaryExpression *>(ast);
 		ASTBooleanExpression *bool_exp = dynamic_cast<ASTBooleanExpression *>(ast);
@@ -125,40 +122,43 @@ public:
 		}
 		else if (bin_exp) {
 			switch(bin_exp->op) {
-			case PLUS: return interpret(bin_exp->left_child) + interpret(bin_exp->right_child);
+			case PLUS: return (bin_exp->left_child->accept(this)) + (bin_exp->right_child->accept(this));
 				break;
-			case MINUS: return interpret(bin_exp->left_child) - interpret(bin_exp->right_child);
+			case MINUS: return (bin_exp->left_child->accept(this)) - (bin_exp->right_child->accept(this));
 				break;
-			case PRODUCT: return interpret(bin_exp->left_child) * interpret(bin_exp->right_child);
+			case PRODUCT: return (bin_exp->left_child->accept(this)) * (bin_exp->right_child->accept(this));
 				break;
-			case DIVIDE: return interpret(bin_exp->left_child) / interpret(bin_exp->right_child);
+			case DIVIDE: return (bin_exp->left_child->accept(this)) / (bin_exp->right_child->accept(this));
 				break;
-			case MODULUS: return interpret(bin_exp->left_child) % interpret(bin_exp->right_child);
+			case MODULUS: return (bin_exp->left_child->accept(this)) % (bin_exp->right_child->accept(this));
 				break;
-			case EXPONENT: return pow(interpret(bin_exp->left_child), interpret(bin_exp->right_child));
+			case EXPONENT: return pow((bin_exp->left_child->accept(this)), (bin_exp->right_child->accept(this)));
 				break;
 			}
 		}
 		else if (bool_exp) {
 			switch(bool_exp->op) {
-			case LESSTHAN: return interpret(bool_exp->left_child) < interpret(bool_exp->right_child);
+			case LESSTHAN: return (bool_exp->left_child->accept(this)) < (bool_exp->right_child->accept(this));
 				break;
-			case GREATERTHAN: return interpret(bool_exp->left_child) > interpret(bool_exp->right_child);
+			case GREATERTHAN: return (bool_exp->left_child->accept(this)) > (bool_exp->right_child->accept(this));
 				break;
-			case LESSEQUAL: return interpret(bool_exp->left_child) <= interpret(bool_exp->right_child);
+			case LESSEQUAL: return (bool_exp->left_child->accept(this)) <= (bool_exp->right_child->accept(this));
 				break;
-			case GREATEREQUAL: return interpret(bool_exp->left_child) >= interpret(bool_exp->right_child);
+			case GREATEREQUAL: return (bool_exp->left_child->accept(this)) >= (bool_exp->right_child->accept(this));
 				break;
-			case NOTEQUAL: return interpret(bool_exp->left_child) != interpret(bool_exp->right_child);
+			case NOTEQUAL: return (bool_exp->left_child->accept(this)) != (bool_exp->right_child->accept(this));
 				break;
-			case EQUALEQUAL: return interpret(bool_exp->left_child) == interpret(bool_exp->right_child);
+			case EQUALEQUAL: return (bool_exp->left_child->accept(this)) == (bool_exp->right_child->accept(this));
 				break;
-			case AND_OP: return interpret(bool_exp->left_child) and interpret(bool_exp->right_child);
+			case AND_OP: return (bool_exp->left_child->accept(this)) and (bool_exp->right_child->accept(this));
 				break;
-			case OR_OP: return interpret(bool_exp->left_child) or interpret(bool_exp->right_child);
+			case OR_OP: return (bool_exp->left_child->accept(this)) or (bool_exp->right_child->accept(this));
 				break;
+			default: cerr << "Compiler Error: Unknown case of operator" << endl;
+				exit(-1);
 			}
 		}
+		return -1;
 	}
 };
 

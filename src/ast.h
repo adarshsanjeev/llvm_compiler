@@ -25,11 +25,21 @@ class ASTPrintable;
 class ASTStatement;
 class ASTAssignmentStatement;
 class ASTPrintStatement;
+class ASTReadStatement;
 class ASTLabel;
 class ASTGoToStatement;
 class ASTIfStatement;
 class ASTWhileStatement;
 class ASTForStatement;
+
+class Visitor {
+public:
+	virtual void visit(ASTProgram* ast) = 0;
+	virtual void visit(ASTDeclBlock* ast) = 0;
+	virtual void visit(ASTCodeBlock* ast) = 0;
+	virtual int visit(ASTExpression* ast) = 0;
+	virtual void visit(ASTStatement* ast) = 0;
+};
 
 enum BinOp {
     PLUS,
@@ -62,6 +72,9 @@ public:
 		this->decl_block = decl_block;
 		this->code_block = code_block;
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTCodeBlock : public ASTNode {
@@ -70,6 +83,9 @@ public:
 	ASTCodeBlock (vector<ASTStatement*> *statements) {
 		this->statements = statements;
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTExpression : public ASTNode {
@@ -77,6 +93,9 @@ public:
 	ASTExpression() {
 	}
 	virtual ~ASTExpression () {}
+	int accept(Visitor *visitor) {
+		return visitor->visit(this);
+	}
 };
 
 class ASTIntegerLiteral : public ASTExpression {
@@ -84,6 +103,9 @@ public:
 	int value;
 	ASTIntegerLiteral(int value) {
 		this->value = value;
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
 	}
 };
 
@@ -98,6 +120,9 @@ public:
 		this->right_child = right;
 		this->op = op;
 	};
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTBooleanExpression : public ASTExpression {
@@ -111,6 +136,9 @@ public:
 		this->right_child = right;
 		this->op = op;
 	};
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTIdentifier : public ASTExpression {
@@ -119,17 +147,23 @@ public:
 	ASTIdentifier(string id) {
 		this->id = id;
 	}
-	 bool operator<( const ASTIdentifier& other) const
-      {
-		  return this->id < other.id;
-	  }
+	bool operator<( const ASTIdentifier& other) const
+	{
+		return this->id < other.id;
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTArrayIdentifier : public ASTIdentifier {
 public:
 	ASTExpression* index;
-    ASTArrayIdentifier(string id, ASTExpression *index) : ASTIdentifier (id) {
+ASTArrayIdentifier(string id, ASTExpression *index) : ASTIdentifier (id) {
 		this->index = index;
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
 	}
 };
 
@@ -139,11 +173,17 @@ public:
 	ASTDeclBlock(vector<ASTIdentifier*> *declarations) {
 		this->declarations = declarations;
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTStatement : public ASTNode {
 public:
 	virtual ~ASTStatement() {}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTAssignmentStatement : public ASTStatement {

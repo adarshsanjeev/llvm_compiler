@@ -3,7 +3,7 @@
   #include <string>
   #include "ast.h"
   #include "visitor.h"
-  #include "print.h"
+
   extern "C" FILE *yyin;
   extern "C" int yylex();
   extern "C" int yyparse();
@@ -170,5 +170,5 @@ int main(int argc, char *argv[])
 
 	interpreterVisitor *visitor = new interpreterVisitor();
 	if (root)
-		visitor->interpret(root);
+		root->accept(visitor);
 }
