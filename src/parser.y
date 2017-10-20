@@ -1,6 +1,7 @@
 %{
   #include <iostream>
   #include <string>
+  #include <stack>
   #include "ast.h"
   #include "visitor.h"
 
@@ -21,6 +22,7 @@
 	ASTDeclBlock *decl_block;
 	ASTProgram *program;
 	ASTStatement *statement;
+	ASTAssignmentStatement *assignment;
 	vector<ASTStatement*> *statements;
 	ASTIdentifier *id;
 	vector<ASTIdentifier*> *ids;
@@ -36,7 +38,7 @@
 %type	<sval>			STRING
 %type	<id>			identifier
 %type	<expr>			expr
-%type	<statement>		assignment
+%type	<assignment>	assignment
 %type	<ids>			identifiers
 %type	<statement>		read
 %type	<boolOp>		relop

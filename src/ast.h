@@ -37,8 +37,16 @@ public:
 	virtual void visit(ASTProgram* ast) = 0;
 	virtual void visit(ASTDeclBlock* ast) = 0;
 	virtual void visit(ASTCodeBlock* ast) = 0;
-	virtual int visit(ASTExpression* ast) = 0;
-	virtual void visit(ASTStatement* ast) = 0;
+	virtual void visit(ASTIntegerLiteral* ast) = 0;
+	virtual void visit(ASTIdentifier* ast) = 0;
+	virtual void visit(ASTBinaryExpression* ast) = 0;
+	virtual void visit(ASTBooleanExpression* ast) = 0;
+	virtual void visit(ASTAssignmentStatement* ast) = 0;
+	virtual void visit(ASTPrintStatement* ast) = 0;
+	virtual void visit(ASTReadStatement* ast) = 0;
+	virtual void visit(ASTWhileStatement* ast) = 0;
+	virtual void visit(ASTIfStatement* ast) = 0;
+	virtual void visit(ASTForStatement* ast) = 0;
 };
 
 enum BinOp {
@@ -62,6 +70,7 @@ enum BoolOp {
 };
 
 class ASTNode {
+	virtual void accept(Visitor *visitor) = 0;
 };
 
 class ASTProgram : public ASTNode {
@@ -93,8 +102,7 @@ public:
 	ASTExpression() {
 	}
 	virtual ~ASTExpression () {}
-	int accept(Visitor *visitor) {
-		return visitor->visit(this);
+	void accept(Visitor *visitor) {
 	}
 };
 
@@ -181,9 +189,7 @@ public:
 class ASTStatement : public ASTNode {
 public:
 	virtual ~ASTStatement() {}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
-	}
+	virtual void accept(Visitor *visitor) = 0;
 };
 
 class ASTAssignmentStatement : public ASTStatement {
@@ -193,6 +199,9 @@ public:
 	ASTAssignmentStatement(ASTIdentifier *id, ASTExpression *rhs) {
 		this->id = id;
 		this->rhs = rhs;
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
 	}
 };
 
@@ -208,6 +217,8 @@ public:
 	ASTPrintable(ASTIdentifier *id) {
 		this->id = id;
 	}
+	void accept(Visitor *visitor) {
+	}
 };
 
 class ASTPrintStatement : public ASTStatement {
@@ -218,6 +229,9 @@ public:
 		this->printable = printable;
 		this->delim = delim;
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTReadStatement : public ASTStatement {
@@ -226,6 +240,9 @@ public:
 	ASTReadStatement(vector<ASTIdentifier*> *ids) {
 		this->ids = ids;
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTLabel : public ASTStatement {
@@ -233,6 +250,8 @@ public:
 	string label_name;
 	ASTLabel(string label_name) {
 		this->label_name = label_name;
+	}
+	void accept(Visitor *visitor) {
 	}
 };
 
@@ -247,6 +266,8 @@ public:
 	ASTGoToStatement(string label_name, ASTExpression* cond) {
 		this->label_name = label_name;
 		this->cond = dynamic_cast<ASTBooleanExpression *>(cond);
+	}
+	void accept(Visitor *visitor) {
 	}
 };
 
@@ -264,15 +285,18 @@ public:
 			this->code_block = new ASTCodeBlock(statements);
 		}
 	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
+	}
 };
 
 class ASTForStatement : public ASTStatement {
 public:
-	ASTStatement *init;
+	ASTAssignmentStatement *init;
 	ASTExpression *limit;
-	ASTStatement *step;
+	ASTAssignmentStatement *step;
 	ASTCodeBlock *code_block;
-	ASTForStatement(ASTStatement *init, ASTExpression *limit, ASTStatement *step, vector<ASTStatement*> *statements) {
+	ASTForStatement(ASTAssignmentStatement *init, ASTExpression *limit, ASTAssignmentStatement *step, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
 			cerr << "Found non boolean expression" << endl;
@@ -284,7 +308,7 @@ public:
 			this->code_block = new ASTCodeBlock(statements);
 		}
 	}
-	ASTForStatement(ASTStatement *init, ASTExpression *limit, vector<ASTStatement*> *statements) {
+	ASTForStatement(ASTAssignmentStatement *init, ASTExpression *limit, vector<ASTStatement*> *statements) {
 		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
 		if (!bool_exp) {
 			cerr << "Found non boolean expression" << endl;
@@ -295,6 +319,9 @@ public:
 			this->code_block = new ASTCodeBlock(statements);
 			this->step = NULL;
 		}
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
 	}
 };
 
@@ -326,6 +353,9 @@ public:
 			this->then_block = new ASTCodeBlock(then_block);
 			this->else_block = new ASTCodeBlock(else_block);
 		}
+	}
+	void accept(Visitor *visitor) {
+		visitor->visit(this);
 	}
 };
 

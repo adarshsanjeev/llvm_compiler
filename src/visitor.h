@@ -7,6 +7,7 @@ ASTProgram *root = NULL;
 
 class interpreterVisitor : public Visitor {
 	map<ASTIdentifier, int> variableTable;
+	stack<int> eval_stack;
 public:
 
     void print_map() {
@@ -14,6 +15,13 @@ public:
 			cout << (*i).first.id << "=" << (*i).second << ", ";
 		}
 		cout << endl;
+	}
+
+	int evaluate_and_return(ASTExpression *ast) {
+		ast->accept(this);
+		int temp = eval_stack.top();
+		eval_stack.pop();
+		return temp;
 	}
 
 	void visit(ASTProgram *ast) {
@@ -45,120 +53,125 @@ public:
 		}
 	}
 
-	void visit(ASTStatement *ast) {
-		ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(ast);
-		ASTReadStatement *readStatement = dynamic_cast<ASTReadStatement *>(ast);
-		ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(ast);
-		ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement *>(ast);
-		ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(ast);
-		/* ASTLabel *label = dynamic_cast<ASTLabel *>(ast); */
-		/* ASTGoToStatement *goTo = dynamic_cast<ASTGoToStatement *>(ast); */
-		ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(ast);
-
-		if (assignmentStatement) {
-			if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
-				variableTable[*(assignmentStatement->id)] = (assignmentStatement->rhs->accept(this));
-			}
-			else {
-				cerr << "Compilation error: Undeclared variable used:" << (assignmentStatement->id)->id << endl;
-				exit(-1);
-			}
+	void visit(ASTAssignmentStatement *assignmentStatement) {
+		if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
+			assignmentStatement->rhs->accept(this);
+			variableTable[*(assignmentStatement->id)] = eval_stack.top();
+			eval_stack.pop();
 		}
-		else if (printStatement) {
-			for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
-				if ((*i)->id == NULL)
-					cout << (*i)->text;
-				else
-					cout << variableTable[*((*i)->id)];
-				cout << " ";
-			}
-			cout << printStatement->delim;
-		}
-		else if (readStatement) {
-			for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
-				cin >> variableTable[**i];
-			}
-		}
-		else if (ifStatement) {
-			if (((ASTExpression*)ifStatement->cond)->accept(this)) {
-				(ifStatement->then_block->accept(this));
-			}
-			else {
-				(ifStatement->else_block->accept(this));
-			}
-		}
-		else if (whileStatement) {
-			while (((ASTExpression*)whileStatement->cond)->accept(this)) {
-				(whileStatement->code_block->accept(this));
-			}
-		}
-		else if (forStatement) {
-			(forStatement->init->accept(this));
-			while ((forStatement->limit->accept(this))) {
-				(forStatement->code_block->accept(this));
-				if (forStatement->step)
-					(forStatement->step->accept(this));
-			}
+		else {
+			cerr << "Compilation error: Undeclared variable used:" << (assignmentStatement->id)->id << endl;
+			exit(-1);
 		}
 	}
 
-	int visit(ASTExpression *ast) {
-		ASTIntegerLiteral *int_literal = dynamic_cast<ASTIntegerLiteral *>(ast);
-		ASTBinaryExpression *bin_exp = dynamic_cast<ASTBinaryExpression *>(ast);
-		ASTBooleanExpression *bool_exp = dynamic_cast<ASTBooleanExpression *>(ast);
-		ASTIdentifier *id = dynamic_cast<ASTIdentifier *>(ast);
+	void visit(ASTReadStatement *readStatement) {
+		for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
+			cin >> variableTable[**i];
+		}
+	}
 
-		if (int_literal) {
-			return int_literal->value;
+	void visit(ASTWhileStatement *whileStatement) {
+		while (evaluate_and_return((ASTExpression*)whileStatement->cond)) {
+			(whileStatement->code_block->accept(this));
 		}
-		else if (id) {
-			if (variableTable.find(*id) != variableTable.end()) {
-				return variableTable[*id];
-			}
-			else {
-				cerr << "Compilation error: Undeclared variable used: " << id->id << endl;
-				exit(-1);
-			}
+	}
+
+	void visit(ASTIfStatement *ifStatement) {
+		if (evaluate_and_return(((ASTExpression*)ifStatement->cond))) {
+			(ifStatement->then_block->accept(this));
 		}
-		else if (bin_exp) {
-			switch(bin_exp->op) {
-			case PLUS: return (bin_exp->left_child->accept(this)) + (bin_exp->right_child->accept(this));
-				break;
-			case MINUS: return (bin_exp->left_child->accept(this)) - (bin_exp->right_child->accept(this));
-				break;
-			case PRODUCT: return (bin_exp->left_child->accept(this)) * (bin_exp->right_child->accept(this));
-				break;
-			case DIVIDE: return (bin_exp->left_child->accept(this)) / (bin_exp->right_child->accept(this));
-				break;
-			case MODULUS: return (bin_exp->left_child->accept(this)) % (bin_exp->right_child->accept(this));
-				break;
-			case EXPONENT: return pow((bin_exp->left_child->accept(this)), (bin_exp->right_child->accept(this)));
-				break;
-			}
+		else {
+			(ifStatement->else_block->accept(this));
 		}
-		else if (bool_exp) {
-			switch(bool_exp->op) {
-			case LESSTHAN: return (bool_exp->left_child->accept(this)) < (bool_exp->right_child->accept(this));
-				break;
-			case GREATERTHAN: return (bool_exp->left_child->accept(this)) > (bool_exp->right_child->accept(this));
-				break;
-			case LESSEQUAL: return (bool_exp->left_child->accept(this)) <= (bool_exp->right_child->accept(this));
-				break;
-			case GREATEREQUAL: return (bool_exp->left_child->accept(this)) >= (bool_exp->right_child->accept(this));
-				break;
-			case NOTEQUAL: return (bool_exp->left_child->accept(this)) != (bool_exp->right_child->accept(this));
-				break;
-			case EQUALEQUAL: return (bool_exp->left_child->accept(this)) == (bool_exp->right_child->accept(this));
-				break;
-			case AND_OP: return (bool_exp->left_child->accept(this)) and (bool_exp->right_child->accept(this));
-				break;
-			case OR_OP: return (bool_exp->left_child->accept(this)) or (bool_exp->right_child->accept(this));
-				break;
-			default: cerr << "Compiler Error: Unknown case of operator" << endl;
-				exit(-1);
-			}
+	}
+
+	void visit(ASTForStatement *forStatement) {
+		(forStatement->init->accept(this));
+		while (evaluate_and_return(forStatement->limit)) {
+			(forStatement->code_block->accept(this));
+			if (forStatement->step)
+				(forStatement->step->accept(this));
 		}
-		return -1;
+	}
+
+	void visit(ASTPrintStatement *printStatement) {
+		for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
+			if ((*i)->id == NULL)
+				cout << (*i)->text;
+			else
+				cout << variableTable[*((*i)->id)];
+			cout << " ";
+		}
+		cout << printStatement->delim;
+	}
+
+	void visit(ASTIntegerLiteral *int_literal) {
+		eval_stack.push(int_literal->value);
+	}
+
+	void visit(ASTBinaryExpression *bin_exp) {
+		switch(bin_exp->op) {
+		case PLUS:
+			eval_stack.push(evaluate_and_return(bin_exp->left_child) + evaluate_and_return(bin_exp->right_child));
+			break;
+		case MINUS:
+			eval_stack.push(evaluate_and_return(bin_exp->left_child) - evaluate_and_return(bin_exp->right_child));
+			break;
+		case PRODUCT:
+			eval_stack.push(evaluate_and_return(bin_exp->left_child) * evaluate_and_return(bin_exp->right_child));
+			break;
+		case DIVIDE:
+			eval_stack.push(evaluate_and_return(bin_exp->left_child) / evaluate_and_return(bin_exp->right_child));
+			break;
+		case MODULUS:
+			eval_stack.push(evaluate_and_return(bin_exp->left_child) % evaluate_and_return(bin_exp->right_child));
+			break;
+		case EXPONENT:
+			eval_stack.push(pow(evaluate_and_return(bin_exp->left_child), evaluate_and_return(bin_exp->right_child)));
+			break;
+		}
+	}
+
+	void visit(ASTBooleanExpression *bool_exp) {
+		switch(bool_exp->op) {
+		case LESSTHAN:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) < evaluate_and_return(bool_exp->right_child));
+			break;
+		case GREATERTHAN:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) > evaluate_and_return(bool_exp->right_child));
+			break;
+		case LESSEQUAL:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) <= evaluate_and_return(bool_exp->right_child));
+			break;
+		case GREATEREQUAL:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) >= evaluate_and_return(bool_exp->right_child));
+			break;
+		case NOTEQUAL:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) != evaluate_and_return(bool_exp->right_child));
+			break;
+		case EQUALEQUAL:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) == evaluate_and_return(bool_exp->right_child));
+			break;
+		case AND_OP:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) and evaluate_and_return(bool_exp->right_child));
+			break;
+		case OR_OP:
+			eval_stack.push(evaluate_and_return(bool_exp->left_child) or evaluate_and_return(bool_exp->right_child));
+			break;
+		default: cerr << "Compiler Error: Unknown case of operator" << endl;
+			exit(-1);
+		}
+	}
+
+	void visit(ASTIdentifier *id) {
+		if (variableTable.find(*id) != variableTable.end()) {
+			eval_stack.push(variableTable[*id]);
+		}
+		else {
+			cerr << "Compilation error: Undeclared variable used: " << id->id << endl;
+			exit(-1);
+		}
 	}
 };
 
