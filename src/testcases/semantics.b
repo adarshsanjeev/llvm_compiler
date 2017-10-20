@@ -20,6 +20,7 @@ codeblock{
 	else {
 	z = 3;
 	}
+	a[9] = 5;
 	println "HELLO", "WORLD", x, z;
-	println a[1];
+	println a[10];
 }

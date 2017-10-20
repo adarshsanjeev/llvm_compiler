@@ -170,6 +170,11 @@ public:
 ASTArrayIdentifier(string id, ASTExpression *index) : ASTIdentifier (id) {
 		this->index = index;
 	}
+	bool operator<( const ASTIdentifier& other) const
+	{
+		cout << "ASSSSSSS";
+		return this->id < other.id;
+	}
 	void accept(Visitor *visitor) {
 		visitor->visit(this);
 	}

@@ -5,14 +5,19 @@
 
 ASTProgram *root = NULL;
 
+union id_values{
+	int value;
+	int *array;
+};
+
 class interpreterVisitor : public Visitor {
-	map<ASTIdentifier, int> variableTable;
+	map<ASTIdentifier, id_values> variable_table;
 	stack<int> eval_stack;
 public:
 
     void print_map() {
-		for (auto i = variableTable.begin(); i != variableTable.end(); i++) {
-			cout << (*i).first.id << "=" << (*i).second << ", ";
+		for (auto i = variable_table.begin(); i != variable_table.end(); i++) {
+			cout << (*i).first.id << "=" << (*i).second.value << ", ";
 		}
 		cout << endl;
 	}
@@ -38,11 +43,14 @@ public:
 					cerr << "Wrong declaration syntax";
 					exit(-1);
 				}
+
+				variable_table[**i].array = new int [literal->value];
 				for (int j=0; j<literal->value; j++) {
-					variableTable[*(new ASTIdentifier(array_id->id+"["+to_string(j)+"]"))];
+					variable_table[**i].array[j] = 0;
 				}
 			}
-			variableTable[**i] = 0;
+			else
+				variable_table[**i].value = 0;
 		}
 	}
 
@@ -54,9 +62,15 @@ public:
 	}
 
 	void visit(ASTAssignmentStatement *assignmentStatement) {
-		if (variableTable.find(*(assignmentStatement->id)) != variableTable.end()) {
+		if (variable_table.find(*(assignmentStatement->id)) != variable_table.end()) {
 			assignmentStatement->rhs->accept(this);
-			variableTable[*(assignmentStatement->id)] = eval_stack.top();
+			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(assignmentStatement->id);
+			if (array_id) {
+				variable_table[*array_id].array[evaluate_and_return(array_id->index)] = eval_stack.top();
+			}
+			else {
+				variable_table[*(assignmentStatement->id)].value = eval_stack.top();
+			}
 			eval_stack.pop();
 		}
 		else {
@@ -67,7 +81,7 @@ public:
 
 	void visit(ASTReadStatement *readStatement) {
 		for (auto i = readStatement->ids->begin(); i != readStatement->ids->end(); i++) {
-			cin >> variableTable[**i];
+			cin >> variable_table[**i].value;
 		}
 	}
 
@@ -99,8 +113,15 @@ public:
 		for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
 			if ((*i)->id == NULL)
 				cout << (*i)->text;
-			else
-				cout << variableTable[*((*i)->id)];
+			else {
+				ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>((*i)->id);
+				if (array_id){
+					cout << variable_table[*array_id].array[evaluate_and_return(array_id->index)];
+				}
+				else {
+					cout << variable_table[*((*i)->id)].value;
+				}
+			}
 			cout << " ";
 		}
 		cout << printStatement->delim;
@@ -165,8 +186,13 @@ public:
 	}
 
 	void visit(ASTIdentifier *id) {
-		if (variableTable.find(*id) != variableTable.end()) {
-			eval_stack.push(variableTable[*id]);
+		if (variable_table.find(*id) != variable_table.end()) {
+			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(id);
+			if (array_id) {
+				eval_stack.push(variable_table[*id].array[evaluate_and_return(array_id->index)]);
+			}
+			else
+				eval_stack.push(variable_table[*id].value);
 		}
 		else {
 			cerr << "Compilation error: Undeclared variable used: " << id->id << endl;
