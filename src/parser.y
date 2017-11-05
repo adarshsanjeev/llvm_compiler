@@ -84,6 +84,8 @@
 
 %left '+' '-'
 %left '*' '/'
+%left '%'
+%left '^'
 %precedence NEG
 
 %%
@@ -126,6 +128,8 @@ expr:			expr '+' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PLUS);}
 		|		expr '-' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::MINUS); }
 		|		expr '*' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::PRODUCT); }
 		|		expr '/' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::DIVIDE); }
+		|		expr '%' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::MODULUS); }
+		|		expr '^' expr { $$ = new ASTBinaryExpression($1, $3, BinOp::EXPONENT); }
 		|       '-' expr %prec NEG { $$ = new ASTBinaryExpression(new ASTIntegerLiteral(-1), $2, BinOp::PRODUCT); }
 		|       '('expr ')' { $$ = $2; }
 		| 		NUMBER { $$ = new ASTIntegerLiteral($1); }
