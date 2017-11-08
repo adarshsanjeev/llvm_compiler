@@ -2,8 +2,9 @@
   #include <iostream>
   #include <string>
   #include <stack>
-  #include "ast.h"
-  #include "visitor.h"
+  #include "ast.hpp"
+  #include "visitor.hpp"
+  #include "llvmv.hpp"
 
   extern "C" FILE *yyin;
   extern "C" int yylex();
