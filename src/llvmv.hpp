@@ -20,36 +20,46 @@ using namespace llvm;
 
 static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
-static std::unique_ptr<Module> TheModule;
-static std::map<std::string, Value *> NamedValues;
+static unique_ptr<Module> TheModule;
+static map<string, Value *> NamedValues;
 
 class CodeGenVisitor {
 public:
-	virtual Value* visit(ASTProgram* ast) = 0;
-	virtual Value* visit(ASTDeclBlock* ast) = 0;
-	virtual Value* visit(ASTCodeBlock* ast) = 0;
+	virtual void visit(ASTProgram* ast) = 0;
+	virtual void visit(ASTDeclBlock* ast) = 0;
+	virtual void visit(ASTCodeBlock* ast) = 0;
 	virtual Value* visit(ASTIntegerLiteral* ast) = 0;
-	virtual Value* visit(ASTIdentifier* ast) = 0;
-	virtual Value* visit(ASTBinaryExpression* ast) = 0;
-	virtual Value* visit(ASTBooleanExpression* ast) = 0;
-	virtual Value* visit(ASTAssignmentStatement* ast) = 0;
-	virtual Value* visit(ASTPrintStatement* ast) = 0;
-	virtual Value* visit(ASTReadStatement* ast) = 0;
-	virtual Value* visit(ASTWhileStatement* ast) = 0;
-	virtual Value* visit(ASTIfStatement* ast) = 0;
-	virtual Value* visit(ASTForStatement* ast) = 0;
+	virtual void visit(ASTIdentifier* ast) = 0;
+	virtual void visit(ASTBinaryExpression* ast) = 0;
+	virtual void visit(ASTBooleanExpression* ast) = 0;
+	virtual void visit(ASTAssignmentStatement* ast) = 0;
+	virtual void visit(ASTPrintStatement* ast) = 0;
+	virtual void visit(ASTReadStatement* ast) = 0;
+	virtual void visit(ASTWhileStatement* ast) = 0;
+	virtual void visit(ASTIfStatement* ast) = 0;
+	virtual void visit(ASTForStatement* ast) = 0;
 };
 
-class llvmVisitor : public Visitor {
+class llvmVisitor : public CodeGenVisitor {
 public:
+	llvmVisitor(ASTProgram *ast) {
+		TheModule = llvm::make_unique<Module>("my cool jit", TheContext);
+		TheModule->setTargetTriple("x86_64-pc-linux-gnu");
+		visit(ast);
+		TheModule->print(errs(), nullptr);
+	}
+	void visit(ASTCodeBlock *ast) {
+
+	}
 	void visit(ASTProgram *ast) {
-		// module = new llvm::Module("main", llvm::getGlobalContext());
-		// module->setTargetTriple("x86_64-pc-linux-gnu");
+		visit(ast->decl_block);
+		visit(ast->code_block);
 	}
 	void visit(ASTDeclBlock *ast) {
 
 	}
 	void visit(ASTAssignmentStatement *ast) {
+
 	}
 	void visit(ASTReadStatement *ast) {
 
@@ -69,12 +79,10 @@ public:
 	void visit(ASTBooleanExpression *ast) {
 
 	}
-	void visit(ASTIntegerLiteral *ast) {
+	Value* visit(ASTIntegerLiteral *ast) {
+		return ConstantInt::get(Type::getInt32Ty(TheContext), ast->value);
 	}
 	void visit(ASTIdentifier *ast) {
-
-	}
-	void visit(ASTCodeBlock *ast) {
 
 	}
 	void visit(ASTForStatement *ast) {
