@@ -1,4 +1,5 @@
 %{
+  #include "llvm/IR/Value.h"
   #include <iostream>
   #include <string>
   #include <stack>
