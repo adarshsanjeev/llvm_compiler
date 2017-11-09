@@ -1,6 +1,9 @@
 declblock {
 		  int x;
+		  int y;
 }
 codeblock {
-    x = 2;
+	y = 2;
+	x = y;
+	println "Hello", y;
 }

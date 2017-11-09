@@ -21,7 +21,7 @@ using namespace llvm;
 
 static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
-static unique_ptr<Module> TheModule;
+static Module* TheModule;
 static map<string, Value *> NamedValues;
 static BasicBlock *mainBlock;
 static Function *mainFunction;
@@ -33,6 +33,7 @@ public:
 	virtual void* visit(ASTCodeBlock* ast) = 0;
 	virtual void* visit(ASTIntegerLiteral* ast) = 0;
 	virtual void* visit(ASTIdentifier* ast) = 0;
+	virtual void* visit(ASTExpression* ast) = 0;
 	virtual void* visit(ASTBinaryExpression* ast) = 0;
 	virtual void* visit(ASTBooleanExpression* ast) = 0;
 	virtual void* visit(ASTAssignmentStatement* ast) = 0;
@@ -47,20 +48,24 @@ class llvmVisitor : public CodeGenVisitor {
 	map<ASTIdentifier, llvm::Value*> variable_table;
 public:
 	llvmVisitor(ASTProgram *ast) {
-		TheModule = llvm::make_unique<Module>("my cool jit", TheContext);
+		TheModule = new llvm::Module("mainModule", TheContext); //llvm::make_unique<Module>("my cool jit", TheContext);
 		TheModule->setTargetTriple("x86_64-pc-linux-gnu");
 		llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(TheContext), false);
 		mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", TheModule);
 		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
-
 		visit(ast);
+		llvm::ReturnInst::Create(TheContext, mainBlock);
 		TheModule->print(errs(), nullptr);
 	}
 	void *visit(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
 			ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(*i);
+			ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(*i);
 			if (assignmentStatement) {
 				visit(assignmentStatement);
+			}
+			if (printStatement) {
+				visit(printStatement);
 			}
 		}
 	}
@@ -86,23 +91,71 @@ public:
 	}
 
 	void *visit(ASTAssignmentStatement *ast) {
-		ASTIntegerLiteral *number = dynamic_cast<ASTIntegerLiteral *>(ast->rhs);
-		if (number) {
-			Value* return_val = (Value*)visit(number);
-			cout << "VALUE" << return_val << endl;
-			variable_table[(*ast->id)] = return_val;
+		Value* return_val = (Value*)visit(ast->rhs);
+		if (return_val != NULL)
 			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, mainBlock);
-		}
-		return NULL;
+		else
+			cout << "NULL GOT" << endl;
 	}
+
+	void *visit(ASTExpression *ast) {
+		ASTIntegerLiteral *number = dynamic_cast<ASTIntegerLiteral *>(ast);
+		ASTBinaryExpression *binary = dynamic_cast<ASTBinaryExpression *>(ast);
+		ASTBooleanExpression *boolean = dynamic_cast<ASTBooleanExpression *>(ast);
+		ASTIdentifier *id = dynamic_cast<ASTIdentifier *>(ast);
+		if (number) {
+			return (Value*)visit(number);
+		}
+		if (binary) {
+			return (Value*)visit(binary);
+		}
+		if (boolean) {
+			return (Value*)visit(boolean);
+		}
+		if (id) {
+			return (Value*)visit(id);
+		}
+	}
+
 	void *visit(ASTReadStatement *ast) {
 		return NULL;
 
 	}
-	void *visit(ASTPrintStatement *ast) {
-		return NULL;
 
+	void print_function_call (vector<Value*> arguments) {
+		string methodName = "printf";
+		llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true);
+		Function *function = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, methodName, TheModule);
+		llvm::CallInst *call = llvm::CallInst::Create(function, llvm::makeArrayRef(arguments), methodName, mainBlock);
 	}
+
+	Value *convert_to_value(string text) {
+		llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
+		variable->setInitializer(llvm::ConstantDataArray::getString(TheContext, text, true));
+		return variable;
+	}
+
+	void *visit(ASTPrintStatement *printStatement) {
+		vector<Value*> print_list;
+		print_list.push_back(convert_to_value(" "));
+		string format_string = "";
+		for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
+			if ((*i)->id == NULL) {
+				format_string.append((*i)->text);
+			}
+			else {
+				format_string.append("%d");
+
+				print_list.push_back((Value*)visit((*i)->id));
+			}
+			format_string.append(" ");
+		}
+		format_string.append(printStatement->delim);
+		print_list[0] = convert_to_value(format_string);
+		print_function_call(print_list);
+		return NULL;
+	}
+
 	void *visit(ASTWhileStatement *ast) {
 		return NULL;
 
@@ -111,32 +164,73 @@ public:
 		return NULL;
 
 	}
-	void *visit(ASTBinaryExpression *ast) {
-// 		switch(ast->op) {
-// 		case BinOp::PLUS:
-// //			return llvm::BinaryOperator::Create(llvm::Instruction::Add, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
-// 			break;
-// 		}
-	}
-	void *visit(ASTBooleanExpression *ast) {
-		return NULL;
 
+	void *visit(ASTBinaryExpression *ast) {
+		switch(ast->op) {
+		case BinOp::PLUS:
+			return llvm::BinaryOperator::Create(llvm::Instruction::Add, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		case BinOp::MINUS:
+			return llvm::BinaryOperator::Create(llvm::Instruction::Sub, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		case BinOp::PRODUCT:
+			return llvm::BinaryOperator::Create(llvm::Instruction::Mul, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		case BinOp::DIVIDE:
+			return llvm::BinaryOperator::Create(llvm::Instruction::SDiv, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		case BinOp::MODULUS:
+			return llvm::BinaryOperator::Create(llvm::Instruction::SRem, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		default:
+			cerr << "Unidentifier operation" << endl;
+			return NULL;
+		}
+	}
+
+	void *visit(ASTBooleanExpression *ast) {
+		switch(ast->op) {
+		case BoolOp::LESSTHAN:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::GREATERTHAN:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::LESSEQUAL:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::GREATEREQUAL:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::NOTEQUAL:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_NE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::EQUALEQUAL:
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_EQ, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			break;
+		case BoolOp::AND_OP:
+			return llvm::BinaryOperator::Create(llvm::Instruction::And, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		case BoolOp::OR_OP:
+			return llvm::BinaryOperator::Create(llvm::Instruction::Or, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			break;
+		default:
+			cerr << "Unidentifier operation" << endl;
+			return NULL;
+		}
 	}
 	void *visit(ASTIntegerLiteral *ast) {
-		return ConstantInt::get(Type::getInt32Ty(TheContext), ast->value);
+		return ConstantInt::get(Type::getInt64Ty(TheContext), ast->value);
 	}
 	void *visit(ASTIdentifier *ast) {
-		// ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(id);
-		// if (array_id) {
+		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
+		if (array_id) {
 
-		// }
-		// else {
-		// 	llvm::AllocaInst * allocaInst = new llvm::AllocaInst(llvm::Type::getInt64Ty(llvm::getGlobalContext()), node->getId(), symbolTable.topBlock());
-		// 	new llvm::StoreInst(llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), 0, true), allocaInst, false, symbolTable.topBlock());
-		// 	symbolTable.declareLocalVariables(node->getId(), allocaInst);
-		// 	return allocaInst;
-		// }
-
+		}
+		else {
+            llvm::Value *value = variable_table[*ast];
+			return new llvm::LoadInst(value, "tmp", mainBlock);
+		}
 	}
 	void *visit(ASTForStatement *ast) {
 
