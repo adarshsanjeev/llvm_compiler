@@ -58,7 +58,7 @@ public:
 		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
 		blockStack.push(mainBlock);
 		visit(ast);
-		llvm::ReturnInst::Create(TheContext, mainBlock);
+		llvm::ReturnInst::Create(TheContext, blockStack.top());
 		blockStack.pop();
 		TheModule->print(errs(), nullptr);
 	}
@@ -196,7 +196,8 @@ public:
 
 		// // symbolTable.popBCS();
 
-		llvm::ReturnInst::Create(TheContext, afterLoopBlock);
+		blockStack.push(afterLoopBlock);
+
 		return NULL;
 	}
 
@@ -213,7 +214,6 @@ public:
 		this->visit(ast->then_block);
 		returnedBlock = blockStack.top();
 		blockStack.pop();
-		llvm::ReturnInst::Create(TheContext, mergeBlock);
 		if (!returnedBlock->getTerminator()) {
 			llvm::BranchInst::Create(mergeBlock, returnedBlock);
 		}
@@ -230,6 +230,7 @@ public:
 		} else {
 		llvm::BranchInst::Create(ifBlock, mergeBlock, comparison, entryBlock);
 		}
+		blockStack.push(mergeBlock);
 		return NULL;
 	}
 
@@ -326,7 +327,8 @@ public:
 
 		// symbolTable.popBCS();
 
-		llvm::ReturnInst::Create(TheContext, afterLoopBlock);
+		blockStack.push(afterLoopBlock);
+
 		return NULL;
 	}
 };
