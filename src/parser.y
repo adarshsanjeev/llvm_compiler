@@ -178,4 +178,6 @@ int main(int argc, char *argv[])
 	/* interpreterVisitor *visitor = new interpreterVisitor(); */
 	/* if (root) */
 	/* 	root->accept(visitor); */
+	/* else */
+	/* 	cerr << "Root is NULL" << endl; */
 }

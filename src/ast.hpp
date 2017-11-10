@@ -85,7 +85,7 @@ enum BoolOp {
 };
 
 class ASTNode {
-	virtual void accept(Visitor *visitor) = 0;
+	virtual void* accept(Visitor *visitor) = 0;
 };
 
 class ASTProgram : public ASTNode {
@@ -96,8 +96,8 @@ public:
 		this->decl_block = decl_block;
 		this->code_block = code_block;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -107,8 +107,8 @@ public:
 	ASTCodeBlock (vector<ASTStatement*> *statements) {
 		this->statements = statements;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -117,7 +117,7 @@ public:
 	ASTExpression() {
 	}
 	virtual ~ASTExpression () {}
-	void accept(Visitor *visitor) {
+	void* accept(Visitor *visitor) {
 	}
 };
 
@@ -127,8 +127,8 @@ public:
 	ASTIntegerLiteral(int value) {
 		this->value = value;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -143,8 +143,8 @@ public:
 		this->right_child = right;
 		this->op = op;
 	};
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -159,8 +159,8 @@ public:
 		this->right_child = right;
 		this->op = op;
 	};
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -174,8 +174,8 @@ public:
 	{
 		return this->id < other.id;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -189,8 +189,8 @@ ASTArrayIdentifier(string id, ASTExpression *index) : ASTIdentifier (id) {
 	{
 		return this->id < other.id;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -200,15 +200,15 @@ public:
 	ASTDeclBlock(vector<ASTIdentifier*> *declarations) {
 		this->declarations = declarations;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
 class ASTStatement : public ASTNode {
 public:
 	virtual ~ASTStatement() {}
-	virtual void accept(Visitor *visitor) = 0;
+	virtual void* accept(Visitor *visitor) = 0;
 };
 
 class ASTAssignmentStatement : public ASTStatement {
@@ -219,8 +219,8 @@ public:
 		this->id = id;
 		this->rhs = rhs;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -236,7 +236,7 @@ public:
 	ASTPrintable(ASTIdentifier *id) {
 		this->id = id;
 	}
-	void accept(Visitor *visitor) {
+	void* accept(Visitor *visitor) {
 	}
 };
 
@@ -248,8 +248,8 @@ public:
 		this->printable = printable;
 		this->delim = delim;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -259,8 +259,8 @@ public:
 	ASTReadStatement(vector<ASTIdentifier*> *ids) {
 		this->ids = ids;
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -270,7 +270,8 @@ public:
 	ASTLabel(string label_name) {
 		this->label_name = label_name;
 	}
-	void accept(Visitor *visitor) {
+	void* accept(Visitor *visitor) {
+		return NULL;
 	}
 };
 
@@ -286,7 +287,7 @@ public:
 		this->label_name = label_name;
 		this->cond = dynamic_cast<ASTBooleanExpression *>(cond);
 	}
-	void accept(Visitor *visitor) {
+	void* accept(Visitor *visitor) {
 	}
 };
 
@@ -304,8 +305,8 @@ public:
 			this->code_block = new ASTCodeBlock(statements);
 		}
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -328,8 +329,8 @@ public:
 		this->code_block = new ASTCodeBlock(statements);
 		this->step = new ASTIntegerLiteral(1);
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
@@ -362,8 +363,8 @@ public:
 			this->else_block = new ASTCodeBlock(else_block);
 		}
 	}
-	void accept(Visitor *visitor) {
-		visitor->visit(this);
+	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 
