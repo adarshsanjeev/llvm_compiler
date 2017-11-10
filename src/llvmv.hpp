@@ -9,7 +9,6 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
@@ -19,11 +18,10 @@
 using namespace std;
 using namespace llvm;
 
-static LLVMContext TheContext;
-static IRBuilder<> Builder(TheContext);
-static Module* TheModule;
 
 class llvmVisitor : public Visitor {
+	LLVMContext TheContext;
+	Module* TheModule;
 	BasicBlock *mainBlock;
 	stack<BasicBlock*> blockStack;
 
@@ -45,29 +43,10 @@ public:
 		blockStack.pop();
 		TheModule->print(errs(), nullptr);
 	}
+
 	void *visit(ASTCodeBlock *ast) {
-		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
-			ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(*i);
-			ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(*i);
-			ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement*>(*i);
-			ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(*i);
-			ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(*i);
-			if (assignmentStatement) {
-				assignmentStatement->accept(this);
-			}
-			else if (ifStatement) {
-				ifStatement->accept(this);
-			}
-			else if (printStatement) {
-				printStatement->accept(this);
-			}
-			else if (forStatement) {
-				forStatement->accept(this);
-			}
-			else if (whileStatement) {
-				whileStatement->accept(this);
-			}
-		}
+		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++)
+			(*i)->accept(this);
 	}
 
 	void *visit(ASTProgram *ast) {
@@ -91,7 +70,7 @@ public:
 	}
 
 	void *visit(ASTAssignmentStatement *ast) {
-		Value* return_val = (Value*)ast->rhs->accept(this);
+		Value* return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
 		if (return_val != NULL)
 			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, blockStack.top());
 		else
@@ -99,22 +78,7 @@ public:
 	}
 
 	void *visit(ASTExpression *ast) {
-		ASTIntegerLiteral *number = dynamic_cast<ASTIntegerLiteral *>(ast);
-		ASTBinaryExpression *binary = dynamic_cast<ASTBinaryExpression *>(ast);
-		ASTBooleanExpression *boolean = dynamic_cast<ASTBooleanExpression *>(ast);
-		ASTIdentifier *id = dynamic_cast<ASTIdentifier *>(ast);
-		if (number) {
-			return (Value*)number->accept(this);
-		}
-		if (binary) {
-			return (Value*)binary->accept(this);
-		}
-		if (boolean) {
-			return (Value*)boolean->accept(this);
-		}
-		if (id) {
-			return (Value*)id->accept(this);
-		}
+		return ast->accept(this);
 	}
 
 	void *visit(ASTReadStatement *ast) {
@@ -123,7 +87,6 @@ public:
 	}
 
 	void print_function_call (vector<Value*> arguments) {
-	    llvm::CallInst::Create(printFunction, llvm::makeArrayRef(arguments), string("printf"), blockStack.top());
 	}
 
 	Value *convert_to_value(string text) {
@@ -143,13 +106,13 @@ public:
 			else {
 				format_string.append("%d");
 
-				print_list.push_back((Value*)(*i)->id->accept(this));
+				print_list.push_back(static_cast<llvm::Value*>((*i)->id->accept(this)));
 			}
 			format_string.append(" ");
 		}
 		format_string.append(printStatement->delim);
 		print_list[0] = convert_to_value(format_string);
-		print_function_call(print_list);
+	    llvm::CallInst::Create(printFunction, llvm::makeArrayRef(print_list), string("printf"), blockStack.top());
 		return NULL;
 	}
 
@@ -162,7 +125,7 @@ public:
 		// symbolTable.pushBCS(afterLoopBlock, headerBlock);
 
 		blockStack.push(headerBlock);
-		llvm::Value *condition = (Value*)ast->cond->accept(this);
+		llvm::Value *condition = static_cast<llvm::Value*>(ast->cond->accept(this));
 		llvm::ICmpInst * comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
 		blockStack.pop();
 
@@ -177,7 +140,7 @@ public:
 			llvm::BranchInst::Create(headerBlock, bodyBlock);
 		}
 
-		// // symbolTable.popBCS();
+		// symbolTable.popBCS();
 
 		blockStack.push(afterLoopBlock);
 
