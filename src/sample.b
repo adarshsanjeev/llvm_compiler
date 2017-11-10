@@ -3,10 +3,7 @@ declblock {
 		  int y;
 }
 codeblock {
-	if (y == 1) {
-	print "If", y;
-	}
-	else {
-	print "Else", x;
-	}
+		  for x=1, 5, 2{
+		  print x;
+		  }
 }

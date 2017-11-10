@@ -49,19 +49,19 @@ class ASTForStatement;
 
 class Visitor {
 public:
-	virtual void visit(ASTProgram* ast) = 0;
-	virtual void visit(ASTDeclBlock* ast) = 0;
-	virtual void visit(ASTCodeBlock* ast) = 0;
-	virtual void visit(ASTIntegerLiteral* ast) = 0;
-	virtual void visit(ASTIdentifier* ast) = 0;
-	virtual void visit(ASTBinaryExpression* ast) = 0;
-	virtual void visit(ASTBooleanExpression* ast) = 0;
-	virtual void visit(ASTAssignmentStatement* ast) = 0;
-	virtual void visit(ASTPrintStatement* ast) = 0;
-	virtual void visit(ASTReadStatement* ast) = 0;
-	virtual void visit(ASTWhileStatement* ast) = 0;
-	virtual void visit(ASTIfStatement* ast) = 0;
-	virtual void visit(ASTForStatement* ast) = 0;
+	virtual void* visit(ASTProgram* ast) = 0;
+	virtual void* visit(ASTDeclBlock* ast) = 0;
+	virtual void* visit(ASTCodeBlock* ast) = 0;
+	virtual void* visit(ASTIntegerLiteral* ast) = 0;
+	virtual void* visit(ASTIdentifier* ast) = 0;
+	virtual void* visit(ASTBinaryExpression* ast) = 0;
+	virtual void* visit(ASTBooleanExpression* ast) = 0;
+	virtual void* visit(ASTAssignmentStatement* ast) = 0;
+	virtual void* visit(ASTPrintStatement* ast) = 0;
+	virtual void* visit(ASTReadStatement* ast) = 0;
+	virtual void* visit(ASTWhileStatement* ast) = 0;
+	virtual void* visit(ASTIfStatement* ast) = 0;
+	virtual void* visit(ASTForStatement* ast) = 0;
 };
 
 enum BinOp {
@@ -313,31 +313,20 @@ class ASTForStatement : public ASTStatement {
 public:
 	ASTAssignmentStatement *init;
 	ASTExpression *limit;
-	ASTAssignmentStatement *step;
+	ASTExpression *step;
 	ASTCodeBlock *code_block;
-	ASTForStatement(ASTAssignmentStatement *init, ASTExpression *limit, ASTAssignmentStatement *step, vector<ASTStatement*> *statements) {
-		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
-		if (!bool_exp) {
-			cerr << "Found non boolean expression" << endl;
-		}
-		else {
-			this->init = init;
-			this->limit = bool_exp;
-			this->step = step;
-			this->code_block = new ASTCodeBlock(statements);
-		}
+	ASTForStatement(ASTAssignmentStatement *init, ASTExpression *limit, ASTExpression *step, vector<ASTStatement*> *statements) {
+		this->init = init;
+		this->limit = limit;
+		this->step = step;
+		this->code_block = new ASTCodeBlock(statements);
 	}
+
 	ASTForStatement(ASTAssignmentStatement *init, ASTExpression *limit, vector<ASTStatement*> *statements) {
-		ASTBooleanExpression* bool_exp = dynamic_cast<ASTBooleanExpression *>(limit);
-		if (!bool_exp) {
-			cerr << "Found non boolean expression" << endl;
-		}
-		else {
-			this->init = init;
-			this->limit = bool_exp;
-			this->code_block = new ASTCodeBlock(statements);
-			this->step = NULL;
-		}
+		this->init = init;
+		this->limit = limit;
+		this->code_block = new ASTCodeBlock(statements);
+		this->step = new ASTIntegerLiteral(1);
 	}
 	void accept(Visitor *visitor) {
 		visitor->visit(this);

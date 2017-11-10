@@ -147,10 +147,8 @@ relop:  		CMP { $$ = BoolOp::EQUALEQUAL; }
 		|		LE { $$ = BoolOp::LESSEQUAL; }
 
 while: 			WHILE cond '{' codelines '}' { $$ = new ASTWhileStatement($2, $4); }
-for: 			FOR assignment ',' cond '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
-		| 		FOR assignment ',' cond ',' assignment '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
-		|		FOR '(' assignment ',' cond ')' '{' codelines '}' { $$ = new ASTForStatement($3, $5, $8); }
-		| 		FOR '(' assignment ',' cond ',' assignment ')' '{' codelines '}' { $$ = new ASTForStatement($3, $5, $7, $10); }
+for: 			FOR assignment ',' expr '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6); }
+		| 		FOR assignment ',' expr ',' expr '{' codelines '}' { $$ = new ASTForStatement($2, $4, $6, $8); }
 if: 			IF cond '{' codelines '}' { $$ = new ASTIfStatement($2, $4); }
 		| 		IF cond '{' codelines '}' ELSE '{' codelines '}' { $$ = new ASTIfStatement($2, $4, $8); }
 %%
@@ -176,5 +174,8 @@ int main(int argc, char *argv[])
 
 	yyparse();
 
-	llvmVisitor *visitor = new llvmVisitor(root);
+	// llvmVisitor *visitor = new llvmVisitor(root);
+	interpreterVisitor *visitor = new interpreterVisitor();
+	if (root)
+		root->accept(visitor);
 }
