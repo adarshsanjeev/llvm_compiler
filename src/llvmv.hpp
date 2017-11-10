@@ -25,6 +25,8 @@ static Module* TheModule;
 static map<string, Value *> NamedValues;
 static BasicBlock *mainBlock;
 static Function *mainFunction;
+static stack<BasicBlock*> blockStack;
+static Function *printFunction;
 
 class CodeGenVisitor {
 public:
@@ -53,18 +55,25 @@ public:
 		llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(TheContext), false);
 		mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", TheModule);
 		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
+		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
+		blockStack.push(mainBlock);
 		visit(ast);
 		llvm::ReturnInst::Create(TheContext, mainBlock);
+		blockStack.pop();
 		TheModule->print(errs(), nullptr);
 	}
 	void *visit(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++) {
 			ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(*i);
 			ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(*i);
+			ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement*>(*i);
 			if (assignmentStatement) {
 				visit(assignmentStatement);
 			}
-			if (printStatement) {
+			else if (ifStatement) {
+				visit(ifStatement);
+			}
+			else if (printStatement) {
 				visit(printStatement);
 			}
 		}
@@ -93,7 +102,7 @@ public:
 	void *visit(ASTAssignmentStatement *ast) {
 		Value* return_val = (Value*)visit(ast->rhs);
 		if (return_val != NULL)
-			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, mainBlock);
+			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, blockStack.top());
 		else
 			cout << "NULL GOT" << endl;
 	}
@@ -123,10 +132,7 @@ public:
 	}
 
 	void print_function_call (vector<Value*> arguments) {
-		string methodName = "printf";
-		llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true);
-		Function *function = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, methodName, TheModule);
-		llvm::CallInst *call = llvm::CallInst::Create(function, llvm::makeArrayRef(arguments), methodName, mainBlock);
+	    llvm::CallInst::Create(printFunction, llvm::makeArrayRef(arguments), string("printf"), blockStack.top());
 	}
 
 	Value *convert_to_value(string text) {
@@ -158,29 +164,57 @@ public:
 
 	void *visit(ASTWhileStatement *ast) {
 		return NULL;
-
 	}
-	void *visit(ASTIfStatement *ast) {
-		return NULL;
 
+	void *visit(ASTIfStatement *ast) {
+		llvm::BasicBlock *entryBlock = blockStack.top();
+		llvm::Value *condition = static_cast<llvm::Value *>(this->visit(ast->cond));
+		llvm::ICmpInst * comparison = new llvm::ICmpInst(*entryBlock, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		llvm::BasicBlock * ifBlock = llvm::BasicBlock::Create(TheContext, "ifBlock", entryBlock->getParent());
+		llvm::BasicBlock * mergeBlock = llvm::BasicBlock::Create(TheContext, "mergeBlock", entryBlock->getParent());
+
+		llvm::BasicBlock * returnedBlock = NULL;
+
+		blockStack.push(ifBlock);
+		this->visit(ast->then_block);
+		returnedBlock = blockStack.top();
+		blockStack.pop();
+		llvm::ReturnInst::Create(TheContext, mergeBlock);
+		if (!returnedBlock->getTerminator()) {
+			llvm::BranchInst::Create(mergeBlock, returnedBlock);
+		}
+		if (ast->else_block) {
+			llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(TheContext, "elseBlock", entryBlock->getParent());
+			blockStack.push(elseBlock);
+			this->visit(ast->else_block);
+			returnedBlock = blockStack.top();
+			blockStack.pop();
+			if (!returnedBlock->getTerminator()) {
+				llvm::BranchInst::Create(mergeBlock, returnedBlock);
+			}
+			llvm::BranchInst::Create(ifBlock, elseBlock, comparison, entryBlock);
+		} else {
+		llvm::BranchInst::Create(ifBlock, mergeBlock, comparison, entryBlock);
+		}
+		return NULL;
 	}
 
 	void *visit(ASTBinaryExpression *ast) {
 		switch(ast->op) {
 		case BinOp::PLUS:
-			return llvm::BinaryOperator::Create(llvm::Instruction::Add, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::Add, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		case BinOp::MINUS:
-			return llvm::BinaryOperator::Create(llvm::Instruction::Sub, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::Sub, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		case BinOp::PRODUCT:
-			return llvm::BinaryOperator::Create(llvm::Instruction::Mul, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::Mul, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		case BinOp::DIVIDE:
-			return llvm::BinaryOperator::Create(llvm::Instruction::SDiv, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::SDiv, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		case BinOp::MODULUS:
-			return llvm::BinaryOperator::Create(llvm::Instruction::SRem, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::SRem, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		default:
 			cerr << "Unidentifier operation" << endl;
@@ -191,28 +225,28 @@ public:
 	void *visit(ASTBooleanExpression *ast) {
 		switch(ast->op) {
 		case BoolOp::LESSTHAN:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::GREATERTHAN:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGT, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::LESSEQUAL:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SLE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::GREATEREQUAL:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_SGE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::NOTEQUAL:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_NE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_NE, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::EQUALEQUAL:
-			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_EQ, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", mainBlock), llvm::Type::getInt64Ty(TheContext), "zext", mainBlock);
+			return new llvm::ZExtInst(llvm::CmpInst::Create(llvm::Instruction::ICmp, llvm::ICmpInst::ICMP_EQ, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)),"tmp", blockStack.top()), llvm::Type::getInt64Ty(TheContext), "zext", blockStack.top());
 			break;
 		case BoolOp::AND_OP:
-			return llvm::BinaryOperator::Create(llvm::Instruction::And, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::And, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		case BoolOp::OR_OP:
-			return llvm::BinaryOperator::Create(llvm::Instruction::Or, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", mainBlock);
+			return llvm::BinaryOperator::Create(llvm::Instruction::Or, static_cast<llvm::Value*>(this->visit(ast->left_child)), static_cast<llvm::Value*>(this->visit(ast->right_child)), "tmp", blockStack.top());
 			break;
 		default:
 			cerr << "Unidentifier operation" << endl;
@@ -229,7 +263,7 @@ public:
 		}
 		else {
             llvm::Value *value = variable_table[*ast];
-			return new llvm::LoadInst(value, "tmp", mainBlock);
+			return new llvm::LoadInst(value, "tmp", blockStack.top());
 		}
 	}
 	void *visit(ASTForStatement *ast) {
