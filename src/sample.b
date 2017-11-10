@@ -3,7 +3,9 @@ declblock {
 		  int y;
 }
 codeblock {
-		  for x=1, 5, 2{
+		  x = 2;
+		  while x<5 {
 		  println x;
+		  x = x+1;
 		  }
 }

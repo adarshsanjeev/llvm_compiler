@@ -68,6 +68,7 @@ public:
 			ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(*i);
 			ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement*>(*i);
 			ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(*i);
+			ASTWhileStatement *whileStatement = dynamic_cast<ASTWhileStatement *>(*i);
 			if (assignmentStatement) {
 				visit(assignmentStatement);
 			}
@@ -79,6 +80,9 @@ public:
 			}
 			else if (forStatement) {
 				visit(forStatement);
+			}
+			else if (whileStatement) {
+				visit(whileStatement);
 			}
 		}
 	}
@@ -167,6 +171,32 @@ public:
 	}
 
 	void *visit(ASTWhileStatement *ast) {
+		llvm::BasicBlock * entryBlock = blockStack.top();
+		llvm::BasicBlock * headerBlock = llvm::BasicBlock::Create(TheContext, "loop_header", entryBlock->getParent(), 0);
+		llvm::BasicBlock * bodyBlock = llvm::BasicBlock::Create(TheContext, "loop_body", entryBlock->getParent(), 0);
+		llvm::BasicBlock * afterLoopBlock = llvm::BasicBlock::Create(TheContext, "after_loop", entryBlock->getParent(), 0);
+
+		// symbolTable.pushBCS(afterLoopBlock, headerBlock);
+
+		blockStack.push(headerBlock);
+		llvm::Value *condition = (Value*)this->visit(ast->cond);
+		llvm::ICmpInst * comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		blockStack.pop();
+
+		llvm::BranchInst::Create(bodyBlock, afterLoopBlock, comparison, headerBlock);
+		llvm::BranchInst::Create(headerBlock, entryBlock);
+
+		blockStack.push(bodyBlock);
+		this->visit(ast->code_block);
+		bodyBlock = blockStack.top();
+		blockStack.pop();
+		if (!bodyBlock->getTerminator()) {
+			llvm::BranchInst::Create(headerBlock, bodyBlock);
+		}
+
+		// // symbolTable.popBCS();
+
+		llvm::ReturnInst::Create(TheContext, afterLoopBlock);
 		return NULL;
 	}
 
