@@ -4,6 +4,6 @@ declblock {
 }
 codeblock {
 		  for x=1, 5, 2{
-		  print x;
+		  println x;
 		  }
 }

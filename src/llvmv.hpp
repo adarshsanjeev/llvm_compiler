@@ -67,6 +67,7 @@ public:
 			ASTAssignmentStatement *assignmentStatement = dynamic_cast<ASTAssignmentStatement *>(*i);
 			ASTPrintStatement *printStatement = dynamic_cast<ASTPrintStatement *>(*i);
 			ASTIfStatement *ifStatement = dynamic_cast<ASTIfStatement*>(*i);
+			ASTForStatement *forStatement = dynamic_cast<ASTForStatement *>(*i);
 			if (assignmentStatement) {
 				visit(assignmentStatement);
 			}
@@ -75,6 +76,9 @@ public:
 			}
 			else if (printStatement) {
 				visit(printStatement);
+			}
+			else if (forStatement) {
+				visit(forStatement);
 			}
 		}
 	}
@@ -266,8 +270,33 @@ public:
 			return new llvm::LoadInst(value, "tmp", blockStack.top());
 		}
 	}
-	void *visit(ASTForStatement *ast) {
 
+	void *visit(ASTForStatement *ast) {
+		llvm::BasicBlock * entryBlock = blockStack.top();
+		llvm::BasicBlock * headerBlock = llvm::BasicBlock::Create(TheContext, "loop_header", entryBlock->getParent(), 0);
+		llvm::BasicBlock * bodyBlock = llvm::BasicBlock::Create(TheContext, "loop_body", entryBlock->getParent(), 0);
+		llvm::BasicBlock * afterLoopBlock = llvm::BasicBlock::Create(TheContext, "after_loop", entryBlock->getParent(), 0);
+
+		// symbolTable.pushBCS(afterLoopBlock, headerBlock);
+
+		this->visit(ast->init);
+		llvm::Value *val = new llvm::LoadInst(variable_table[*(ast->init->id)], "load", headerBlock);
+		llvm::ICmpInst *comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_SLT, val, static_cast<llvm::Value *>(this->visit(ast->limit)), "tmp");
+		llvm::BranchInst::Create(bodyBlock, afterLoopBlock, comparison, headerBlock);
+		llvm::BranchInst::Create(headerBlock, entryBlock);
+
+		blockStack.push(bodyBlock);
+		this->visit(ast->code_block);
+		this->visit(new ASTAssignmentStatement(ast->init->id, new ASTBinaryExpression(ast->init->id, ast->step, BinOp::PLUS)));
+		bodyBlock = blockStack.top();
+		blockStack.pop();
+		if (!bodyBlock->getTerminator()) {
+			llvm::BranchInst::Create(headerBlock, bodyBlock);
+		}
+
+		// symbolTable.popBCS();
+
+		llvm::ReturnInst::Create(TheContext, afterLoopBlock);
 		return NULL;
 	}
 };
