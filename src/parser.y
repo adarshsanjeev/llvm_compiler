@@ -176,8 +176,8 @@ int main(int argc, char *argv[])
 
 	llvmVisitor *visitor = new llvmVisitor(root);
 	/* interpreterVisitor *visitor = new interpreterVisitor(); */
-	/* if (root) */
-	/* 	root->accept(visitor); */
-	/* else */
-	/* 	cerr << "Root is NULL" << endl; */
+	if (root)
+		root->accept(visitor);
+	else
+		cerr << "Root is NULL" << endl;
 }

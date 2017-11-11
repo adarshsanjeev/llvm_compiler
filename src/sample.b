@@ -1,11 +1,8 @@
 declblock {
-		  int x;
-		  int y;
+	int x[10];
+	int i;
 }
 codeblock {
-		  x = 2;
-		  while x<5 {
-		  println x;
-		  x = x+1;
-		  }
+		x[0] = 1;
+		print x[0];
 }

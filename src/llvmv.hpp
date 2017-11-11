@@ -28,6 +28,8 @@ class llvmVisitor : public Visitor {
 	Function *mainFunction;
 	Function *printFunction;
 	Function *scanFunction;
+
+	ASTProgram *root;
 	map<ASTIdentifier, llvm::Value*> variable_table;
 public:
 	llvmVisitor(ASTProgram *ast) {
@@ -37,11 +39,7 @@ public:
 		mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", TheModule);
 		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
 		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
-		blockStack.push(mainBlock);
-		ast->accept(this);
-		llvm::ReturnInst::Create(TheContext, blockStack.top());
-		blockStack.pop();
-		TheModule->print(errs(), nullptr);
+		root = ast;
 	}
 
 	void *visit(ASTCodeBlock *ast) {
@@ -50,15 +48,22 @@ public:
 	}
 
 	void *visit(ASTProgram *ast) {
+		blockStack.push(mainBlock);
 		ast->decl_block->accept(this);
 		ast->code_block->accept(this);
-		return NULL;
+		llvm::ReturnInst::Create(TheContext, blockStack.top());
+		blockStack.pop();
+		TheModule->print(errs(), nullptr);
 	}
 
 	void *visit(ASTDeclBlock *ast) {
 		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
 			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
 			if (array_id) {
+				llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
+				variable->setInitializer(llvm::ConstantAggregateZero::get(llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10)));
+                variable_table.insert(make_pair(array_id->id, variable));
+				return variable;
 			}
 			else {
 				llvm::GlobalVariable *globalInteger = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, (*i)->id);
@@ -71,10 +76,18 @@ public:
 
 	void *visit(ASTAssignmentStatement *ast) {
 		Value* return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
-		if (return_val != NULL)
+		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast->id);
+		if (array_id) {
+			std::vector <llvm::Value *> index;
+			index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+			index.push_back(static_cast<llvm::Value *>(this->visit(array_id->index)));
+			llvm::Value *val = variable_table[*array_id];
+			llvm::Value *location = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+            return new llvm::StoreInst(return_val, location, false, blockStack.top());
+		}
+		else {
 			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, blockStack.top());
-		else
-			cout << "NULL GOT" << endl;
+		}
 	}
 
 	void *visit(ASTExpression *ast) {
@@ -240,7 +253,15 @@ public:
 	void *visit(ASTIdentifier *ast) {
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (array_id) {
-
+            std::vector <llvm::Value*> index;
+            index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+            index.push_back(static_cast<llvm::Value *>(this->visit(array_id->index)));
+            llvm::Value* val = variable_table[*array_id];
+            llvm::Value * offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+            if (val) {
+                llvm::LoadInst * load = new llvm::LoadInst(offset, "tmp", blockStack.top());
+                return load;
+            }
 		}
 		else {
             llvm::Value *value = variable_table[*ast];
