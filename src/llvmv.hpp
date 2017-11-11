@@ -65,18 +65,18 @@ public:
 	void *visit(ASTDeclBlock *ast) {
 		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
 			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
-			// if (isDeclared(*i)) {
-			// 	cerr << "Error: variable " << (*i)->id << " has already been declared" <<endl;
-			// 	exit(-1);
-			// }
+			if (isDeclared(*i)) {
+				cerr << "Error: variable " << (*i)->id << " has already been declared" <<endl;
+				exit(-1);
+			}
 			if (array_id) {
-				llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
 				ASTIntegerLiteral *index = dynamic_cast<ASTIntegerLiteral*>(array_id->index);
 				if (!index) {
 					cerr << "Error: Array declaration index must be a number: " << array_id->id << endl;
 					exit(-1);
 				}
-				variable->setInitializer(llvm::ConstantAggregateZero::get(llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10)));
+				llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), index->value), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
+				variable->setInitializer(llvm::ConstantAggregateZero::get(llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), index->value)));
                 variableTable.insert(make_pair(array_id->id, variable));
 			}
 			else {
