@@ -27,7 +27,7 @@ class llvmVisitor : public Visitor {
 
 	ASTProgram *root;
 	map<ASTIdentifier, llvm::Value*> variableTable;
-	map<ASTIdentifier, llvm::Value*> labelTable;
+	map<string, llvm::BasicBlock*> labelTable;
 public:
 	llvmVisitor(ASTProgram *ast) {
 		TheModule = new llvm::Module("mainModule", TheContext);
@@ -56,9 +56,32 @@ public:
 	}
 
 	void *visit(ASTLabel *ast) {
+		llvm::BasicBlock *entry_block = blockStack.top();
+		llvm::BasicBlock *label_block = llvm::BasicBlock::Create(TheContext, "label_target", entry_block->getParent(), 0);
+		llvm::BranchInst::Create(label_block, entry_block);
+		labelTable.insert(make_pair(ast->label_name, label_block));
+		blockStack.push(label_block);
 		// llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, ast->id);
 		// variable->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-		// variableTable.insert(make_pair((*i)->id, variable));
+		return NULL;
+	}
+
+	void *visit(ASTGoToStatement *ast) {
+		if (labelTable.find(ast->label_name) == labelTable.end()) {
+			cerr << "Error: Could not find label \"" << ast->label_name <<"\" to goto" << endl;
+			exit(-1);
+		}
+		llvm::BasicBlock *entry_block = blockStack.top();
+		llvm::BasicBlock *label_block = labelTable[ast->label_name];
+		if (ast->cond) {
+			llvm::Value *condition = static_cast<llvm::Value *>(ast->cond->accept(this));
+			llvm::ICmpInst *comparison = new llvm::ICmpInst(*(blockStack.top()), llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+			llvm::BasicBlock *goto_fail_block = llvm::BasicBlock::Create(TheContext, "label_target", entry_block->getParent(), 0);
+			llvm::BranchInst::Create(label_block, goto_fail_block, comparison, entry_block);
+			blockStack.push(goto_fail_block);
+		}
+		else
+			llvm::BranchInst::Create(label_block, entry_block);
 		return NULL;
 	}
 
@@ -161,8 +184,8 @@ public:
 		llvm::ICmpInst *comparison = new llvm::ICmpInst(*header_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
 		blockStack.pop();
 
-		llvm::BranchInst::Create(body_block, after_loop_block, comparison, header_block);
 		llvm::BranchInst::Create(header_block, entry_block);
+		llvm::BranchInst::Create(body_block, after_loop_block, comparison, header_block);
 
 		blockStack.push(body_block);
 		ast->code_block->accept(this);

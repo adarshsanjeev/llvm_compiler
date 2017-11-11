@@ -63,6 +63,7 @@ public:
 	virtual void* visit(ASTWhileStatement* ast) = 0;
 	virtual void* visit(ASTIfStatement* ast) = 0;
 	virtual void* visit(ASTForStatement* ast) = 0;
+	virtual void* visit(ASTGoToStatement* ast) = 0;
 };
 
 enum BinOp {
@@ -289,6 +290,7 @@ public:
 		this->cond = dynamic_cast<ASTBooleanExpression *>(cond);
 	}
 	void* accept(Visitor *visitor) {
+		return visitor->visit(this);
 	}
 };
 

@@ -4,11 +4,9 @@ declblock {
 	int temp;
 }
 codeblock {
- 	for i = 0, 100 {
- 		x[i] = i;
- 	}
- 	for i = 0, 100 {
- 		print x[i];
- 	}
-	println "";
+	i = 0;
+	LABEL1:
+	i = i+1;
+	println i;
+	goto LABEL1 if i == 1;
 }
