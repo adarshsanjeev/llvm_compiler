@@ -18,7 +18,6 @@
 using namespace std;
 using namespace llvm;
 
-
 class llvmVisitor : public Visitor {
 	LLVMContext TheContext;
 	Module* TheModule;
@@ -39,6 +38,7 @@ public:
 		mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", TheModule);
 		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
 		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
+		scanFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("scanf"), TheModule);
 		root = ast;
 	}
 
@@ -94,18 +94,21 @@ public:
 		return ast->accept(this);
 	}
 
-	void *visit(ASTReadStatement *ast) {
-		return NULL;
-
-	}
-
-	void print_function_call (vector<Value*> arguments) {
-	}
-
 	Value *convert_to_value(string text) {
 		llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
 		variable->setInitializer(llvm::ConstantDataArray::getString(TheContext, text, true));
 		return variable;
+	}
+
+	void *visit(ASTReadStatement *ast) {
+		// vector<Value*> scan_list;
+		// scan_list.push_back(convert_to_value("%d"));
+		// scan_list.push_back(convert_to_value(""));
+		// for (auto i = ast->ids->begin(); i!= ast->ids->end(); i++) {
+		// 	scan_list[1] = static_cast<llvm::Value*>((*i)->accept(this));
+		// 	llvm::CallInst::Create(scanFunction, llvm::makeArrayRef(scan_list), string("scanf"), blockStack.top());
+		// }
+		return NULL;
 	}
 
 	void *visit(ASTPrintStatement *printStatement) {

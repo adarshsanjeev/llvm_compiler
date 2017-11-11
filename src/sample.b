@@ -3,6 +3,6 @@ declblock {
 	int i;
 }
 codeblock {
-		x[0] = 1;
-		print x[0];
+		read i;
+		print i;
 }
