@@ -15,18 +15,15 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/Value.h>
 
-using namespace std;
-using namespace llvm;
-
 class llvmVisitor : public Visitor {
-	LLVMContext TheContext;
-	Module* TheModule;
-	BasicBlock *mainBlock;
-	stack<BasicBlock*> blockStack;
+	llvm::LLVMContext TheContext;
+	llvm::Module* TheModule;
+	llvm::BasicBlock *mainBlock;
+	stack<llvm::BasicBlock*> blockStack;
 
-	Function *mainFunction;
-	Function *printFunction;
-	Function *scanFunction;
+	llvm::Function *mainFunction;
+	llvm::Function *printFunction;
+	llvm::Function *scanFunction;
 
 	ASTProgram *root;
 	map<ASTIdentifier, llvm::Value*> variableTable;
@@ -36,15 +33,10 @@ public:
 		TheModule = new llvm::Module("mainModule", TheContext);
 		TheModule->setTargetTriple("x86_64-pc-linux-gnu");
 		mainFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(TheContext), false), llvm::GlobalValue::ExternalLinkage, "main", TheModule);
-		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
+		mainBlock = llvm::BasicBlock::Create(TheContext, "mainFunction", mainFunction);
 		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
 		scanFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("scanf"), TheModule);
 		root = ast;
-	}
-
-	void *visit(ASTCodeBlock *ast) {
-		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++)
-			(*i)->accept(this);
 	}
 
 	void *visit(ASTProgram *ast) {
@@ -53,7 +45,18 @@ public:
 		ast->code_block->accept(this);
 		llvm::ReturnInst::Create(TheContext, blockStack.top());
 		blockStack.pop();
-		TheModule->print(errs(), nullptr);
+		TheModule->print(llvm::errs(), nullptr);
+	}
+
+	void *visit(ASTCodeBlock *ast) {
+		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++)
+			(*i)->accept(this);
+	}
+
+	void *visit(ASTLabel *ast) {
+		// llvm::GlobalVariable *globalInteger = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, ast->id);
+		// globalInteger->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+		// variableTable.insert(make_pair((*i)->id, globalInteger));
 	}
 
 	void *visit(ASTDeclBlock *ast) {
@@ -75,7 +78,7 @@ public:
 	}
 
 	void *visit(ASTAssignmentStatement *ast) {
-		Value* return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
+		llvm::Value* return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast->id);
 		if (array_id) {
 			std::vector <llvm::Value *> index;
@@ -90,14 +93,14 @@ public:
 		}
 	}
 
-	Value *convertToValue(string text) {
+	llvm::Value *convertToValue(string text) {
 		llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
 		variable->setInitializer(llvm::ConstantDataArray::getString(TheContext, text, true));
 		return variable;
 	}
 
 	void *visit(ASTReadStatement *ast) {
-		// vector<Value*> scan_list;
+		// vector<llvm::Value*> scan_list;
 		// scan_list.push_back(convertToValue("%d"));
 		// scan_list.push_back(convertToValue(""));
 		// for (auto i = ast->ids->begin(); i!= ast->ids->end(); i++) {
@@ -108,7 +111,7 @@ public:
 	}
 
 	void *visit(ASTPrintStatement *printStatement) {
-		vector<Value*> print_list;
+		vector<llvm::Value*> print_list;
 		print_list.push_back(convertToValue(" "));
 		string format_string = "";
 		for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
@@ -248,7 +251,7 @@ public:
 	}
 
 	void *visit(ASTIntegerLiteral *ast) {
-		return ConstantInt::get(Type::getInt64Ty(TheContext), ast->value);
+		return llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), ast->value);
 	}
 
 	void *visit(ASTIdentifier *ast) {

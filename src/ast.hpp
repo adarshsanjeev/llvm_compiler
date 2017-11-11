@@ -58,6 +58,7 @@ public:
 	virtual void* visit(ASTBooleanExpression* ast) = 0;
 	virtual void* visit(ASTAssignmentStatement* ast) = 0;
 	virtual void* visit(ASTPrintStatement* ast) = 0;
+	virtual void* visit(ASTLabel* ast) = 0;
 	virtual void* visit(ASTReadStatement* ast) = 0;
 	virtual void* visit(ASTWhileStatement* ast) = 0;
 	virtual void* visit(ASTIfStatement* ast) = 0;
@@ -271,7 +272,7 @@ public:
 		this->label_name = label_name;
 	}
 	void* accept(Visitor *visitor) {
-		return NULL;
+		return visitor->visit(this);
 	}
 };
 
