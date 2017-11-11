@@ -175,9 +175,9 @@ int main(int argc, char *argv[])
 	yyparse();
 
 	llvmVisitor *visitor = new llvmVisitor(root);
-	/* interpreterVisitor *visitor = new interpreterVisitor(); */
+//	interpreterVisitor *visitor = new interpreterVisitor(root);
 	if (root)
 		root->accept(visitor);
 	else
-		cerr << "Root is NULL" << endl;
+		cerr << "Parsing error. Could not create abstract syntax tree." << endl;
 }

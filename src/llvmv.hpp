@@ -17,7 +17,7 @@
 
 class llvmVisitor : public Visitor {
 	llvm::LLVMContext TheContext;
-	llvm::Module* TheModule;
+	llvm::Module *TheModule;
 	llvm::BasicBlock *mainBlock;
 	stack<llvm::BasicBlock*> blockStack;
 
@@ -46,55 +46,74 @@ public:
 		llvm::ReturnInst::Create(TheContext, blockStack.top());
 		blockStack.pop();
 		TheModule->print(llvm::errs(), nullptr);
+		return NULL;
 	}
 
 	void *visit(ASTCodeBlock *ast) {
 		for (auto i = ast->statements->begin(); i != ast->statements->end(); i++)
 			(*i)->accept(this);
+		return NULL;
 	}
 
 	void *visit(ASTLabel *ast) {
-		// llvm::GlobalVariable *globalInteger = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, ast->id);
-		// globalInteger->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-		// variableTable.insert(make_pair((*i)->id, globalInteger));
+		// llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, ast->id);
+		// variable->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+		// variableTable.insert(make_pair((*i)->id, variable));
+		return NULL;
 	}
 
 	void *visit(ASTDeclBlock *ast) {
 		for (auto i = ast->declarations->begin(); i != ast->declarations->end(); i++) {
 			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
+			// if (isDeclared(*i)) {
+			// 	cerr << "Error: variable " << (*i)->id << " has already been declared" <<endl;
+			// 	exit(-1);
+			// }
 			if (array_id) {
-				llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
+				llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
+				ASTIntegerLiteral *index = dynamic_cast<ASTIntegerLiteral*>(array_id->index);
+				if (!index) {
+					cerr << "Error: Array declaration index must be a number: " << array_id->id << endl;
+					exit(-1);
+				}
 				variable->setInitializer(llvm::ConstantAggregateZero::get(llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10)));
                 variableTable.insert(make_pair(array_id->id, variable));
-				return variable;
 			}
 			else {
-				llvm::GlobalVariable *globalInteger = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, (*i)->id);
-                globalInteger->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-                variableTable.insert(make_pair((*i)->id, globalInteger));
+				llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, (*i)->id);
+                variable->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+                variableTable.insert(make_pair((*i)->id, variable));
 			}
 		}
 		return NULL;
 	}
 
+	bool isDeclared(ASTIdentifier *ast) {
+		return variableTable.find(*ast) != variableTable.end();
+	}
+
 	void *visit(ASTAssignmentStatement *ast) {
-		llvm::Value* return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
+		if (!isDeclared(ast->id)) {
+			cerr << "Error: variable " << ast->id->id << " not declared" <<endl;
+			exit(-1);
+		}
+		llvm::Value *return_val = static_cast<llvm::Value*>(ast->rhs->accept(this));
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast->id);
 		if (array_id) {
-			std::vector <llvm::Value *> index;
+			std::vector <llvm::Value*> index;
 			index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
 			index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
-			llvm::Value *val = variableTable[*array_id];
-			llvm::Value *location = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+			llvm::Value *location = llvm::GetElementPtrInst::CreateInBounds(variableTable[*array_id], index, "tmp", blockStack.top());
             return new llvm::StoreInst(return_val, location, false, blockStack.top());
 		}
 		else {
 			return new llvm::StoreInst(return_val, variableTable[*(ast->id)], false, blockStack.top());
 		}
+		return NULL;
 	}
 
 	llvm::Value *convertToValue(string text) {
-		llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
+		llvm::GlobalVariable *variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
 		variable->setInitializer(llvm::ConstantDataArray::getString(TheContext, text, true));
 		return variable;
 	}
@@ -132,16 +151,14 @@ public:
 	}
 
 	void *visit(ASTWhileStatement *ast) {
-		llvm::BasicBlock * entry_block = blockStack.top();
-		llvm::BasicBlock * header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
-		llvm::BasicBlock * body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
-		llvm::BasicBlock * after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
-
-		// symbolTable.pushBCS(after_loop_block, header_block);
+		llvm::BasicBlock *entry_block = blockStack.top();
+		llvm::BasicBlock *header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
+		llvm::BasicBlock *body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
+		llvm::BasicBlock *after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
 
 		blockStack.push(header_block);
 		llvm::Value *condition = static_cast<llvm::Value*>(ast->cond->accept(this));
-		llvm::ICmpInst * comparison = new llvm::ICmpInst(*header_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		llvm::ICmpInst *comparison = new llvm::ICmpInst(*header_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
 		blockStack.pop();
 
 		llvm::BranchInst::Create(body_block, after_loop_block, comparison, header_block);
@@ -155,21 +172,18 @@ public:
 			llvm::BranchInst::Create(header_block, body_block);
 		}
 
-		// symbolTable.popBCS();
-
 		blockStack.push(after_loop_block);
-
 		return NULL;
 	}
 
 	void *visit(ASTIfStatement *ast) {
 		llvm::BasicBlock *entry_block = blockStack.top();
 		llvm::Value *condition = static_cast<llvm::Value *>(ast->cond->accept(this));
-		llvm::ICmpInst * comparison = new llvm::ICmpInst(*entry_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
-		llvm::BasicBlock * if_block = llvm::BasicBlock::Create(TheContext, "if_block", entry_block->getParent());
-		llvm::BasicBlock * merge_block = llvm::BasicBlock::Create(TheContext, "merge_block", entry_block->getParent());
+		llvm::ICmpInst *comparison = new llvm::ICmpInst(*entry_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		llvm::BasicBlock *if_block = llvm::BasicBlock::Create(TheContext, "if_block", entry_block->getParent());
+		llvm::BasicBlock *merge_block = llvm::BasicBlock::Create(TheContext, "merge_block", entry_block->getParent());
 
-		llvm::BasicBlock * returned_block = NULL;
+		llvm::BasicBlock *returned_block = NULL;
 
 		blockStack.push(if_block);
 		ast->then_block->accept(this);
@@ -255,13 +269,17 @@ public:
 	}
 
 	void *visit(ASTIdentifier *ast) {
+		if (!isDeclared(ast)) {
+			cerr << "Error: variable " << ast->id << " not declared" <<endl;
+			exit(-1);
+		}
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (array_id) {
             std::vector <llvm::Value*> index;
             index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
             index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
-            llvm::Value* val = variableTable[*array_id];
-            llvm::Value * offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+            llvm::Value *val = variableTable[*array_id];
+            llvm::Value *offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
             if (val) {
                 return new llvm::LoadInst(offset, "tmp", blockStack.top());
             }
@@ -275,12 +293,10 @@ public:
 	}
 
 	void *visit(ASTForStatement *ast) {
-		llvm::BasicBlock * entry_block = blockStack.top();
-		llvm::BasicBlock * header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
-		llvm::BasicBlock * body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
-		llvm::BasicBlock * after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
-
-		// symbolTable.pushBCS(after_loop_block, header_block);
+		llvm::BasicBlock *entry_block = blockStack.top();
+		llvm::BasicBlock *header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
+		llvm::BasicBlock *body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
+		llvm::BasicBlock *after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
 
 		ast->init->accept(this);
 		llvm::Value *val = new llvm::LoadInst(variableTable[*(ast->init->id)], "load", header_block);
@@ -297,10 +313,7 @@ public:
 			llvm::BranchInst::Create(header_block, body_block);
 		}
 
-		// symbolTable.popBCS();
-
 		blockStack.push(after_loop_block);
-
 		return NULL;
 	}
 };

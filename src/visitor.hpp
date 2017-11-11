@@ -13,7 +13,12 @@ union id_values{
 class interpreterVisitor : public Visitor {
 	map<ASTIdentifier, id_values> variable_table;
 	stack<int> eval_stack;
+	ASTProgram *root = NULL;
 public:
+
+	interpreterVisitor(ASTProgram *ast) {
+		this->root = ast;
+	}
 
     void print_map() {
 		for (auto i = variable_table.begin(); i != variable_table.end(); i++) {
