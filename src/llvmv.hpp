@@ -34,8 +34,7 @@ public:
 	llvmVisitor(ASTProgram *ast) {
 		TheModule = new llvm::Module("mainModule", TheContext);
 		TheModule->setTargetTriple("x86_64-pc-linux-gnu");
-		llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(TheContext), false);
-		mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", TheModule);
+		mainFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(TheContext), false), llvm::GlobalValue::ExternalLinkage, "main", TheModule);
 		mainBlock = llvm::BasicBlock::Create(TheContext, Twine("mainFunction"), mainFunction);
 		printFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("printf"), TheModule);
 		scanFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt64Ty(TheContext), true), llvm::GlobalValue::ExternalLinkage, string("scanf"), TheModule);
@@ -80,7 +79,7 @@ public:
 		if (array_id) {
 			std::vector <llvm::Value *> index;
 			index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-			index.push_back(static_cast<llvm::Value *>(this->visit(array_id->index)));
+			index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
 			llvm::Value *val = variable_table[*array_id];
 			llvm::Value *location = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
             return new llvm::StoreInst(return_val, location, false, blockStack.top());
@@ -88,10 +87,6 @@ public:
 		else {
 			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, blockStack.top());
 		}
-	}
-
-	void *visit(ASTExpression *ast) {
-		return ast->accept(this);
 	}
 
 	Value *convert_to_value(string text) {
@@ -250,21 +245,24 @@ public:
 			return NULL;
 		}
 	}
+
 	void *visit(ASTIntegerLiteral *ast) {
 		return ConstantInt::get(Type::getInt64Ty(TheContext), ast->value);
 	}
+
 	void *visit(ASTIdentifier *ast) {
 		ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(ast);
 		if (array_id) {
             std::vector <llvm::Value*> index;
             index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-            index.push_back(static_cast<llvm::Value *>(this->visit(array_id->index)));
+            index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
             llvm::Value* val = variable_table[*array_id];
             llvm::Value * offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
             if (val) {
-                llvm::LoadInst * load = new llvm::LoadInst(offset, "tmp", blockStack.top());
-                return load;
+                return new llvm::LoadInst(offset, "tmp", blockStack.top());
             }
+			else
+				return NULL;
 		}
 		else {
             llvm::Value *value = variable_table[*ast];
@@ -282,7 +280,7 @@ public:
 
 		ast->init->accept(this);
 		llvm::Value *val = new llvm::LoadInst(variable_table[*(ast->init->id)], "load", headerBlock);
-		llvm::ICmpInst *comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_SLT, val, static_cast<llvm::Value *>(ast->limit->accept(this)), "tmp");
+		llvm::ICmpInst *comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_NE, val, static_cast<llvm::Value *>(ast->limit->accept(this)), "tmp");
 		llvm::BranchInst::Create(bodyBlock, afterLoopBlock, comparison, headerBlock);
 		llvm::BranchInst::Create(headerBlock, entryBlock);
 
