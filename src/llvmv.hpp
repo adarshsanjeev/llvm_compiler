@@ -29,7 +29,8 @@ class llvmVisitor : public Visitor {
 	Function *scanFunction;
 
 	ASTProgram *root;
-	map<ASTIdentifier, llvm::Value*> variable_table;
+	map<ASTIdentifier, llvm::Value*> variableTable;
+	map<ASTIdentifier, llvm::Value*> labelTable;
 public:
 	llvmVisitor(ASTProgram *ast) {
 		TheModule = new llvm::Module("mainModule", TheContext);
@@ -61,13 +62,13 @@ public:
 			if (array_id) {
 				llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10), false, llvm::GlobalValue::CommonLinkage, NULL, array_id->id);
 				variable->setInitializer(llvm::ConstantAggregateZero::get(llvm::ArrayType::get(llvm::Type::getInt64Ty(TheContext), 10)));
-                variable_table.insert(make_pair(array_id->id, variable));
+                variableTable.insert(make_pair(array_id->id, variable));
 				return variable;
 			}
 			else {
 				llvm::GlobalVariable *globalInteger = new llvm::GlobalVariable(*TheModule, llvm::Type::getInt64Ty(TheContext), false, llvm::GlobalValue::CommonLinkage, NULL, (*i)->id);
                 globalInteger->setInitializer(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
-                variable_table.insert(make_pair((*i)->id, globalInteger));
+                variableTable.insert(make_pair((*i)->id, globalInteger));
 			}
 		}
 		return NULL;
@@ -80,16 +81,16 @@ public:
 			std::vector <llvm::Value *> index;
 			index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
 			index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
-			llvm::Value *val = variable_table[*array_id];
+			llvm::Value *val = variableTable[*array_id];
 			llvm::Value *location = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
             return new llvm::StoreInst(return_val, location, false, blockStack.top());
 		}
 		else {
-			return new llvm::StoreInst(return_val, variable_table[*(ast->id)], false, blockStack.top());
+			return new llvm::StoreInst(return_val, variableTable[*(ast->id)], false, blockStack.top());
 		}
 	}
 
-	Value *convert_to_value(string text) {
+	Value *convertToValue(string text) {
 		llvm::GlobalVariable* variable = new llvm::GlobalVariable(*TheModule, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), text.size() + 1), true, llvm::GlobalValue::InternalLinkage, NULL, "string");
 		variable->setInitializer(llvm::ConstantDataArray::getString(TheContext, text, true));
 		return variable;
@@ -97,8 +98,8 @@ public:
 
 	void *visit(ASTReadStatement *ast) {
 		// vector<Value*> scan_list;
-		// scan_list.push_back(convert_to_value("%d"));
-		// scan_list.push_back(convert_to_value(""));
+		// scan_list.push_back(convertToValue("%d"));
+		// scan_list.push_back(convertToValue(""));
 		// for (auto i = ast->ids->begin(); i!= ast->ids->end(); i++) {
 		// 	scan_list[1] = static_cast<llvm::Value*>((*i)->accept(this));
 		// 	llvm::CallInst::Create(scanFunction, llvm::makeArrayRef(scan_list), string("scanf"), blockStack.top());
@@ -108,7 +109,7 @@ public:
 
 	void *visit(ASTPrintStatement *printStatement) {
 		vector<Value*> print_list;
-		print_list.push_back(convert_to_value(" "));
+		print_list.push_back(convertToValue(" "));
 		string format_string = "";
 		for (auto i = printStatement->printable->begin(); i != printStatement->printable->end(); i++) {
 			if ((*i)->id == NULL) {
@@ -122,72 +123,72 @@ public:
 			format_string.append(" ");
 		}
 		format_string.append(printStatement->delim);
-		print_list[0] = convert_to_value(format_string);
+		print_list[0] = convertToValue(format_string);
 	    llvm::CallInst::Create(printFunction, llvm::makeArrayRef(print_list), string("printf"), blockStack.top());
 		return NULL;
 	}
 
 	void *visit(ASTWhileStatement *ast) {
-		llvm::BasicBlock * entryBlock = blockStack.top();
-		llvm::BasicBlock * headerBlock = llvm::BasicBlock::Create(TheContext, "loop_header", entryBlock->getParent(), 0);
-		llvm::BasicBlock * bodyBlock = llvm::BasicBlock::Create(TheContext, "loop_body", entryBlock->getParent(), 0);
-		llvm::BasicBlock * afterLoopBlock = llvm::BasicBlock::Create(TheContext, "after_loop", entryBlock->getParent(), 0);
+		llvm::BasicBlock * entry_block = blockStack.top();
+		llvm::BasicBlock * header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
+		llvm::BasicBlock * body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
+		llvm::BasicBlock * after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
 
-		// symbolTable.pushBCS(afterLoopBlock, headerBlock);
+		// symbolTable.pushBCS(after_loop_block, header_block);
 
-		blockStack.push(headerBlock);
+		blockStack.push(header_block);
 		llvm::Value *condition = static_cast<llvm::Value*>(ast->cond->accept(this));
-		llvm::ICmpInst * comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		llvm::ICmpInst * comparison = new llvm::ICmpInst(*header_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
 		blockStack.pop();
 
-		llvm::BranchInst::Create(bodyBlock, afterLoopBlock, comparison, headerBlock);
-		llvm::BranchInst::Create(headerBlock, entryBlock);
+		llvm::BranchInst::Create(body_block, after_loop_block, comparison, header_block);
+		llvm::BranchInst::Create(header_block, entry_block);
 
-		blockStack.push(bodyBlock);
+		blockStack.push(body_block);
 		ast->code_block->accept(this);
-		bodyBlock = blockStack.top();
+		body_block = blockStack.top();
 		blockStack.pop();
-		if (!bodyBlock->getTerminator()) {
-			llvm::BranchInst::Create(headerBlock, bodyBlock);
+		if (!body_block->getTerminator()) {
+			llvm::BranchInst::Create(header_block, body_block);
 		}
 
 		// symbolTable.popBCS();
 
-		blockStack.push(afterLoopBlock);
+		blockStack.push(after_loop_block);
 
 		return NULL;
 	}
 
 	void *visit(ASTIfStatement *ast) {
-		llvm::BasicBlock *entryBlock = blockStack.top();
+		llvm::BasicBlock *entry_block = blockStack.top();
 		llvm::Value *condition = static_cast<llvm::Value *>(ast->cond->accept(this));
-		llvm::ICmpInst * comparison = new llvm::ICmpInst(*entryBlock, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
-		llvm::BasicBlock * ifBlock = llvm::BasicBlock::Create(TheContext, "ifBlock", entryBlock->getParent());
-		llvm::BasicBlock * mergeBlock = llvm::BasicBlock::Create(TheContext, "mergeBlock", entryBlock->getParent());
+		llvm::ICmpInst * comparison = new llvm::ICmpInst(*entry_block, llvm::ICmpInst::ICMP_NE, condition, llvm::ConstantInt::get(llvm::Type::getInt64Ty(TheContext), 0, true), "tmp");
+		llvm::BasicBlock * if_block = llvm::BasicBlock::Create(TheContext, "if_block", entry_block->getParent());
+		llvm::BasicBlock * merge_block = llvm::BasicBlock::Create(TheContext, "merge_block", entry_block->getParent());
 
-		llvm::BasicBlock * returnedBlock = NULL;
+		llvm::BasicBlock * returned_block = NULL;
 
-		blockStack.push(ifBlock);
+		blockStack.push(if_block);
 		ast->then_block->accept(this);
-		returnedBlock = blockStack.top();
+		returned_block = blockStack.top();
 		blockStack.pop();
-		if (!returnedBlock->getTerminator()) {
-			llvm::BranchInst::Create(mergeBlock, returnedBlock);
+		if (!returned_block->getTerminator()) {
+			llvm::BranchInst::Create(merge_block, returned_block);
 		}
 		if (ast->else_block) {
-			llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(TheContext, "elseBlock", entryBlock->getParent());
-			blockStack.push(elseBlock);
+			llvm::BasicBlock *else_block = llvm::BasicBlock::Create(TheContext, "else_block", entry_block->getParent());
+			blockStack.push(else_block);
 			ast->else_block->accept(this);
-			returnedBlock = blockStack.top();
+			returned_block = blockStack.top();
 			blockStack.pop();
-			if (!returnedBlock->getTerminator()) {
-				llvm::BranchInst::Create(mergeBlock, returnedBlock);
+			if (!returned_block->getTerminator()) {
+				llvm::BranchInst::Create(merge_block, returned_block);
 			}
-			llvm::BranchInst::Create(ifBlock, elseBlock, comparison, entryBlock);
+			llvm::BranchInst::Create(if_block, else_block, comparison, entry_block);
 		} else {
-		llvm::BranchInst::Create(ifBlock, mergeBlock, comparison, entryBlock);
+		llvm::BranchInst::Create(if_block, merge_block, comparison, entry_block);
 		}
-		blockStack.push(mergeBlock);
+		blockStack.push(merge_block);
 		return NULL;
 	}
 
@@ -256,7 +257,7 @@ public:
             std::vector <llvm::Value*> index;
             index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
             index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
-            llvm::Value* val = variable_table[*array_id];
+            llvm::Value* val = variableTable[*array_id];
             llvm::Value * offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
             if (val) {
                 return new llvm::LoadInst(offset, "tmp", blockStack.top());
@@ -265,37 +266,37 @@ public:
 				return NULL;
 		}
 		else {
-            llvm::Value *value = variable_table[*ast];
+            llvm::Value *value = variableTable[*ast];
 			return new llvm::LoadInst(value, "tmp", blockStack.top());
 		}
 	}
 
 	void *visit(ASTForStatement *ast) {
-		llvm::BasicBlock * entryBlock = blockStack.top();
-		llvm::BasicBlock * headerBlock = llvm::BasicBlock::Create(TheContext, "loop_header", entryBlock->getParent(), 0);
-		llvm::BasicBlock * bodyBlock = llvm::BasicBlock::Create(TheContext, "loop_body", entryBlock->getParent(), 0);
-		llvm::BasicBlock * afterLoopBlock = llvm::BasicBlock::Create(TheContext, "after_loop", entryBlock->getParent(), 0);
+		llvm::BasicBlock * entry_block = blockStack.top();
+		llvm::BasicBlock * header_block = llvm::BasicBlock::Create(TheContext, "loop_header", entry_block->getParent(), 0);
+		llvm::BasicBlock * body_block = llvm::BasicBlock::Create(TheContext, "loop_body", entry_block->getParent(), 0);
+		llvm::BasicBlock * after_loop_block = llvm::BasicBlock::Create(TheContext, "after_loop", entry_block->getParent(), 0);
 
-		// symbolTable.pushBCS(afterLoopBlock, headerBlock);
+		// symbolTable.pushBCS(after_loop_block, header_block);
 
 		ast->init->accept(this);
-		llvm::Value *val = new llvm::LoadInst(variable_table[*(ast->init->id)], "load", headerBlock);
-		llvm::ICmpInst *comparison = new llvm::ICmpInst(*headerBlock, llvm::ICmpInst::ICMP_NE, val, static_cast<llvm::Value *>(ast->limit->accept(this)), "tmp");
-		llvm::BranchInst::Create(bodyBlock, afterLoopBlock, comparison, headerBlock);
-		llvm::BranchInst::Create(headerBlock, entryBlock);
+		llvm::Value *val = new llvm::LoadInst(variableTable[*(ast->init->id)], "load", header_block);
+		llvm::ICmpInst *comparison = new llvm::ICmpInst(*header_block, llvm::ICmpInst::ICMP_NE, val, static_cast<llvm::Value *>(ast->limit->accept(this)), "tmp");
+		llvm::BranchInst::Create(body_block, after_loop_block, comparison, header_block);
+		llvm::BranchInst::Create(header_block, entry_block);
 
-		blockStack.push(bodyBlock);
+		blockStack.push(body_block);
 		ast->code_block->accept(this);
 		(new ASTAssignmentStatement(ast->init->id, new ASTBinaryExpression(ast->init->id, ast->step, BinOp::PLUS)))->accept(this);
-		bodyBlock = blockStack.top();
+		body_block = blockStack.top();
 		blockStack.pop();
-		if (!bodyBlock->getTerminator()) {
-			llvm::BranchInst::Create(headerBlock, bodyBlock);
+		if (!body_block->getTerminator()) {
+			llvm::BranchInst::Create(header_block, body_block);
 		}
 
 		// symbolTable.popBCS();
 
-		blockStack.push(afterLoopBlock);
+		blockStack.push(after_loop_block);
 
 		return NULL;
 	}
