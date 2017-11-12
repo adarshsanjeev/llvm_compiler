@@ -173,11 +173,17 @@ public:
 				index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
 				index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
 				llvm::Value *val = variableTable[*array_id];
-				llvm::Value *offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+				llvm::Value *offset = llvm::GetElementPtrInst::Create(NULL, val, index, "tmp", blockStack.top());
 				scan_list[1] = offset;
 			}
 			else {
-
+				std::vector <llvm::Value*> index;
+				index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+				index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+				// index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
+				llvm::Value *val = variableTable[**i];
+				llvm::Value *offset = llvm::GetElementPtrInst::Create(NULL, val, index, "tmp", blockStack.top());
+				scan_list[1] = offset;
 			}
 			// scan_list[1] = static_cast<llvm::Value*>((*i)->accept(this));
 			llvm::CallInst::Create(scanFunction, llvm::makeArrayRef(scan_list), string("scanf"), blockStack.top());

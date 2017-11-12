@@ -4,8 +4,6 @@ declblock {
 	int temp;
 }
 codeblock {
-	read x[2];
-	for i=0, 5 {
-		print x[i];
-	}
+	read temp;
+	print temp;
 }
