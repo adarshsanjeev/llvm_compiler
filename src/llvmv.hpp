@@ -45,7 +45,7 @@ public:
 		ast->code_block->accept(this);
 		llvm::ReturnInst::Create(TheContext, blockStack.top());
 		blockStack.pop();
-		TheModule->print(llvm::errs(), nullptr);
+		TheModule->print(llvm::outs(), nullptr);
 		return NULL;
 	}
 
@@ -142,13 +142,46 @@ public:
 	}
 
 	void *visit(ASTReadStatement *ast) {
-		// vector<llvm::Value*> scan_list;
-		// scan_list.push_back(convertToValue("%d"));
-		// scan_list.push_back(convertToValue(""));
-		// for (auto i = ast->ids->begin(); i!= ast->ids->end(); i++) {
-		// 	scan_list[1] = static_cast<llvm::Value*>((*i)->accept(this));
-		// 	llvm::CallInst::Create(scanFunction, llvm::makeArrayRef(scan_list), string("scanf"), blockStack.top());
+		// if (!isDeclared(ast)) {
+		// 	cerr << "Error: variable " << ast->id << " not declared" <<endl;
+		// 	exit(-1);
 		// }
+		// if (array_id) {
+        //     std::vector <llvm::Value*> index;
+        //     index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+        //     index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
+        //     llvm::Value *val = variableTable[*array_id];
+        //     llvm::Value *offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+        //     if (val) {
+        //         return new llvm::LoadInst(offset, "tmp", blockStack.top());
+        //     }
+		// 	else
+		// 		return NULL;
+		// }
+		// else {
+        //     llvm::Value *value = variableTable[*ast];
+		// 	return new llvm::LoadInst(value, "tmp", blockStack.top());
+		// }
+
+		vector<llvm::Value*> scan_list;
+		scan_list.push_back(convertToValue("%d"));
+		scan_list.push_back(convertToValue(""));
+		for (auto i = ast->ids->begin(); i!= ast->ids->end(); i++) {
+			ASTArrayIdentifier *array_id = dynamic_cast<ASTArrayIdentifier *>(*i);
+			if (array_id) {
+				std::vector <llvm::Value*> index;
+				index.push_back(llvm::ConstantInt::get(TheContext, llvm::APInt(64, llvm::StringRef("0"), 10)));
+				index.push_back(static_cast<llvm::Value *>(array_id->index->accept(this)));
+				llvm::Value *val = variableTable[*array_id];
+				llvm::Value *offset = llvm::GetElementPtrInst::CreateInBounds(val, index, "tmp", blockStack.top());
+				scan_list[1] = offset;
+			}
+			else {
+
+			}
+			// scan_list[1] = static_cast<llvm::Value*>((*i)->accept(this));
+			llvm::CallInst::Create(scanFunction, llvm::makeArrayRef(scan_list), string("scanf"), blockStack.top());
+		}
 		return NULL;
 	}
 

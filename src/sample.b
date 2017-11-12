@@ -4,9 +4,8 @@ declblock {
 	int temp;
 }
 codeblock {
-	i = 0;
-	LABEL1:
-	i = i+1;
-	println i;
-	goto LABEL1 if i == 1;
+	read x[2];
+	for i=0, 5 {
+		print x[i];
+	}
 }
