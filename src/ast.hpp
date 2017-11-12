@@ -72,7 +72,6 @@ enum BinOp {
     PRODUCT,
     DIVIDE,
 	MODULUS,
-	EXPONENT
 };
 
 enum BoolOp {
@@ -120,6 +119,7 @@ public:
 	}
 	virtual ~ASTExpression () {}
 	void* accept(Visitor *visitor) {
+		return NULL;
 	}
 };
 
@@ -239,6 +239,7 @@ public:
 		this->id = id;
 	}
 	void* accept(Visitor *visitor) {
+		return NULL;
 	}
 };
 

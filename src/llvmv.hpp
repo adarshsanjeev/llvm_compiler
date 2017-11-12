@@ -289,7 +289,8 @@ public:
 			return llvm::BinaryOperator::Create(llvm::Instruction::SRem, static_cast<llvm::Value*>(ast->left_child->accept(this)), static_cast<llvm::Value*>(ast->right_child->accept(this)), "tmp", blockStack.top());
 			break;
 		default:
-			cerr << "Unidentifier operation" << endl;
+			cerr << "Error: Unidentifier operation" << endl;
+			exit(-1);
 			return NULL;
 		}
 	}
@@ -321,7 +322,8 @@ public:
 			return llvm::BinaryOperator::Create(llvm::Instruction::Or, static_cast<llvm::Value*>(ast->left_child->accept(this)), static_cast<llvm::Value*>(ast->right_child->accept(this)), "tmp", blockStack.top());
 			break;
 		default:
-			cerr << "Unidentifier operation" << endl;
+			cerr << "Error: Unidentifier operation" << endl;
+			exit(-1);
 			return NULL;
 		}
 	}

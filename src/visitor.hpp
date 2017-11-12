@@ -13,12 +13,7 @@ union id_values{
 class interpreterVisitor : public Visitor {
 	map<ASTIdentifier, id_values> variable_table;
 	stack<int> eval_stack;
-	ASTProgram *root = NULL;
 public:
-
-	interpreterVisitor(ASTProgram *ast) {
-		this->root = ast;
-	}
 
     void print_map() {
 		for (auto i = variable_table.begin(); i != variable_table.end(); i++) {
@@ -67,6 +62,12 @@ public:
 			// print_map();
 		}
 		return NULL;
+	}
+
+	void* visit(ASTLabel *ast) {
+	}
+
+	void* visit(ASTGoToStatement *ast) {
 	}
 
 	void* visit(ASTAssignmentStatement *assignmentStatement) {
@@ -161,9 +162,6 @@ public:
 			break;
 		case MODULUS:
 			eval_stack.push(evaluate_and_return(bin_exp->left_child) % evaluate_and_return(bin_exp->right_child));
-			break;
-		case EXPONENT:
-			eval_stack.push(pow(evaluate_and_return(bin_exp->left_child), evaluate_and_return(bin_exp->right_child)));
 			break;
 		}
 		return NULL;
