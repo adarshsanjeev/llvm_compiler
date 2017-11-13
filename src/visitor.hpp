@@ -104,11 +104,12 @@ public:
 	}
 
 	void* visit(ASTIfStatement *ifStatement) {
-		if (evaluate_and_return(((ASTExpression*)ifStatement->cond))) {
-			(ifStatement->then_block->accept(this));
+		int x = evaluate_and_return(((ASTExpression*)ifStatement->cond));
+		if (x) {
+			ifStatement->then_block->accept(this);
 		}
-		else {
-			(ifStatement->else_block->accept(this));
+		else if (ifStatement->else_block) {
+			ifStatement->else_block->accept(this);
 		}
 		return NULL;
 	}

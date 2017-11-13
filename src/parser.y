@@ -98,7 +98,7 @@ code_block: 	CODE_BLOCK '{' codelines '}' { $$ = new ASTCodeBlock($3); }
 declarations: 	declaration ';' declarations { $3->insert($3->end(), $1->begin(), $1->end()); $$ = $3; } | %empty { $$ = new vector<ASTIdentifier*>; }
 declaration: 	INT identifiers { $$ = $2; }
 
-identifier: 	IDENTIFIER { $$ = new ASTArrayIdentifier($1, new ASTIntegerLiteral(0)); }
+identifier: 	IDENTIFIER { $$ = new ASTIdentifier($1); }
 		| 		IDENTIFIER '[' expr ']' { $$ = new ASTArrayIdentifier($1, $3); }
 identifiers: 	identifier { $$ = new vector<ASTIdentifier*>; $$->push_back($1); }
 		| 		identifier ',' identifiers { $3->push_back($1); $$ = $3; }
