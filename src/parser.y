@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
 
 	yyparse();
 
-	/* llvmVisitor *visitor = new llvmVisitor(root); */
-	interpreterVisitor *visitor = new interpreterVisitor();
+	llvmVisitor *visitor = new llvmVisitor(root);
+	/* interpreterVisitor *visitor = new interpreterVisitor(); */
 	if (root)
 		root->accept(visitor);
 	else

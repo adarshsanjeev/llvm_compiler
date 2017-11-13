@@ -27,17 +27,22 @@
 \usepackage{listings}
 \usepackage{color}
 \usepackage{xcolor}
+\usepackage{etoolbox}
+\usepackage{mdframed}
+\newenvironment{theorem}%
+  {\begin{mdframed}[backgroundcolor=lightgray]\begin{mdtheorem}}%
+  {\end{mdtheorem}\end{mdframed}}
+
+\AtBeginEnvironment{quote}{\singlespacing\small}
 
 \newcommand{\HRule}[1]{\rule{\linewidth}{#1}}
 \onehalfspacing
 \setcounter{tocdepth}{5}
 \setcounter{secnumdepth}{5}
 
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
 \lstset { 
 language=C++,
-backgroundcolor=\color{black!5}, % set backgroundcolor
+backgroundcolor=\color{black!10}, % set backgroundcolor
 basicstyle=\footnotesize,% basic font setting
 }
 %-------------------------------------------------------------------------------
@@ -55,10 +60,10 @@ basicstyle=\footnotesize,% basic font setting
 
 \begin{document}
 
-\title{ \normalsize \textsc{Manual}
+\title{ \normalsize \textsc{Programming Manual}
 		\\ [2.0cm]
 		\HRule{0.5pt} \\
-		\LARGE \textbf{\uppercase{BFlat}}
+		\LARGE \textbf{\uppercase{B Flat}}
 		\HRule{2pt} \\ [0.5cm]
 		\normalsize \today \vspace*{5\baselineskip}}
 
@@ -85,8 +90,6 @@ BFlat is a programming language
 
 \section*{Syntax}
 \addcontentsline{toc}{section}{Syntax}
-
-This is syntax.
 
 \subsection*{Datatypes}
 \addcontentsline{toc}{subsection}{Datatypes}
@@ -125,7 +128,7 @@ read x[5], y[2+2];
 \end{lstlisting}
 
 \subsubsection*{If Statement}
-\addcontentsline{toc}{subsubsection}{Read Statements}
+\addcontentsline{toc}{subsubsection}{If Statements}
 \begin{lstlisting}
 if ( x > 2) {
  //Statements
@@ -136,7 +139,7 @@ else {
 \end{lstlisting}
 
 \subsubsection*{For loop}
-\addcontentsline{toc}{subsubsection}{Read Statements}
+\addcontentsline{toc}{subsubsection}{For Statements}
 \begin{lstlisting}
 for x=2, 5 { // Default step is +1
  //Statements
@@ -153,7 +156,7 @@ for x=2, 9, 2 { // Won't terminate if condition is not met
 \end{lstlisting}
 
 \subsubsection*{While Loop Statement}
-\addcontentsline{toc}{subsubsection}{Read Statements}
+\addcontentsline{toc}{subsubsection}{While Loop}
 \begin{lstlisting}
 while ( x > 2) {
  //Statements
@@ -161,7 +164,7 @@ while ( x > 2) {
 \end{lstlisting}
 
 \subsubsection*{Goto Statement}
-\addcontentsline{toc}{subsubsection}{Read Statements}
+\addcontentsline{toc}{subsubsection}{Goto Statements}
 \begin{lstlisting}
 LABEL:
 // Statements
@@ -181,134 +184,275 @@ goto LABEL if x > 2;
 \end{figure}
 \section*{Visitor Design Pattern}
 \addcontentsline{toc}{section}{Visitor Design Pattern}
-% \begin{figure}[h]
-%  \includegraphics[width=\linewidth]{class_visitor.png}
-%  \caption{Inheritance Graph of Visitor}
-%  \label{fig:figure2}
-% \end{figure}
+The visitor contains the visit function for all of the classes. The classes themselves contain the accept method for the visitor.
+\begin{lstlisting}
+virtual void* visit(ASTProgram *ast);
+virtual void* visit(ASTDeclBlock *ast);
+virtual void* visit(ASTCodeBlock *ast);
+virtual void* visit(ASTIntegerLiteral *ast);
+virtual void* visit(ASTIdentifier *ast);
+virtual void* visit(ASTBinaryExpression *ast);
+virtual void* visit(ASTBooleanExpression *ast);
+virtual void* visit(ASTAssignmentStatement *ast);
+virtual void* visit(ASTPrintStatement *ast);
+virtual void* visit(ASTLabel *ast);
+virtual void* visit(ASTReadStatement *ast);
+virtual void* visit(ASTWhileStatement *ast);
+virtual void* visit(ASTIfStatement *ast); 
+virtual void* visit(ASTForStatement *ast);
+virtual void* visit(ASTGoToStatement *ast);
+\end{lstlisting}
+\begin{figure}[h]
+ \includegraphics[width=\linewidth]{class_visitor.png}
+ \caption{Inheritance Graph of Visitor}
+ \label{fig:figure2}
+\end{figure}
 \section*{Design of Interpreter}
+The interpreter implements a visitor. In the visitor class, it simply runs the code as C.
 \section*{Design of LLVM Code Generator}
+The code generator also implements a visitor. A llvm::Module is used to store the code, which is added by the various visit functions.
+\begin{lstlisting}
+void *visit (ASTProgram *ast)
+void *visit (ASTCodeBlock *ast)
+void *visit (ASTLabel *ast  
+void *visit (ASTGoToStatement *ast)
+void *visit (ASTDeclBlock *ast)
+bool isDeclared (ASTIdentifier *ast)
+void *visit (ASTAssignmentStatement *ast)
+llvm::Value *convertToValue (string text)
+void *visit (ASTReadStatement *ast)
+void *visit (ASTPrintStatement *printStatement)
+void *visit (ASTWhileStatement *ast)
+void *visit (ASTIfStatement *ast)
+void *visit (ASTBinaryExpression *ast)
+void *visit (ASTBooleanExpression *ast)
+void *visit (ASTIntegerLiteral *ast)
+void *visit (ASTIdentifier *ast) 
+void *visit (ASTForStatement *ast)
+\end{lstlisting}
 \section*{Performance Comparison}
+\addcontentsline{toc}{section}{Performance Comparison}
+\subsection*{Nested loops}
+\addcontentsline{toc}{subsubsection}{Nested loops}
+\begin{quote}
+ Interpreter \\ 
+                                                                                      \\ 
+         64.959270      task-clock:u (msec)       \#    0.995 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+             1,644      page-faults:u             \#    0.025 M/sec                   \\ 
+       165,019,321      cycles:u                  \#    2.540 GHz                     \\ 
+       207,817,955      instructions:u            \#    1.26  insn per cycle          \\ 
+        37,957,543      branches:u                \#  584.328 M/sec                   \\ 
+           197,379      branch-misses:u           \#    0.52\% of all branches        \\ 
+                                                                                      \\ 
+       0.065293522 seconds time elapsed                                               \\ 
+                                                                                      \\ 
+LLI                                                                                     \\ 
+                                                                                      \\ 
+ Performance counter stats for 'lli ll-src/four nested loops.ll':                     \\ 
+                                                                                      \\ 
+         19.760535      task-clock:u (msec)       \#    0.987 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+             1,849      page-faults:u             \#    0.094 M/sec                   \\ 
+        42,513,111      cycles:u                  \#    2.151 GHz                     \\ 
+        64,944,168      instructions:u            \#    1.53  insn per cycle          \\ 
+        11,852,773      branches:u                \#  599.820 M/sec                   \\ 
+           240,822      branch-misses:u           \#    2.03\% of all branches        \\ 
+                                                                                      \\ 
+       0.020017150 seconds time elapsed                                               \\ 
+                                                                                      \\ 
+LLC                                                                                     \\ 
+                                                                                      \\ 
+ Performance counter stats for './ll-out/four nested loops':                          \\ 
+                                                                                      \\ 
+          3.762934      task-clock:u (msec)       \#    0.949 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+                96      page-faults:u             \#    0.026 M/sec                   \\ 
+         9,120,774      cycles:u                  \#    2.424 GHz                     \\ 
+        20,378,922      instructions:u            \#    2.23  insn per cycle          \\ 
+         4,184,892      branches:u                \# 1112.135 M/sec                   \\ 
+            20,664      branch-misses:u           \#    0.49\% of all branches        \\ 
+                                                                                      \\ 
+       0.003966169 seconds time elapsed                                               \\ 
+\end{quote}
 
-%-------------------------------------------------------------------------------
-% REFERENCES
-%-------------------------------------------------------------------------------
-% \newpage
-% \section*{References}
-% \addcontentsline{toc}{section}{References}
-% 
-% Anand, U., 2010. The Elusive Free Radicals, \textit{The Clinical Chemist,} [e-journal] Available at:<\url{http://www.clinchem.org/content/56/10/1649.full.pdf}> [Accessed 2 November 2013]
-% \newline
-% \newline
-% 
-% Biology Forums, 2012. \textit{Normal glomerulus. Acute glomerulonephritis.} [online] Available at: <\url{http://biology-forums.com/index.php?action=gallery;sa=view;id=9284}> [Accessed 23 October 2013].
-% \newline
-% \newline
-% 
-% Budisavljevic, M., Hodge, L., Barber, K., Fulmer, J., Durazo-Arvizu, R., Self, S., Kuhlmann, M., Raymond, J. and Greene, E., 2003. Oxidative stress in the pathogenesis of experimental mesangial proliferative glomerulonephritis, \textit{American Journal of Physiology - Renal Physiology,} 285(6), pp. 1138-1148.
-% \newline
-% \newline
-% 
-% Chien, C., Lee, P., Chen, C., Ma, M., Lai, M. and Hsu, S., 2001. De Novo Demonstration and Co-localization of Free-Radical Production and Apoptosis Formation in Rat Kidney Subjected to Ischemia/Reperfusion, \textit{Journal of the American Society of Nephrology,} 12(5), pp. 973-982.
-% \newline
-% \newline
-% 
-% Couser, W., 1993. Pathogenesis of glomerulonephritis, \textit{Kidney International Supplements,} 42, pp. 19-26.
-% \newline
-% \newline
-% 
-% De Gasparo, M., 2002. Angiotensin II and nitric oxide interaction, \textit{Heart Failure Reviews,} [e-journal] Available at:<\url{http://www.ncbi.nlm.nih.gov/pubmed/12379820}> [Accessed 26 October 2013]
-% \newline
-% \newline
-% 
-% Edinburgh Renal Education Pages, 2012. \textit{Glomerulonephritis} [online] Available at: <\url{http://www.edrep.org/pages/textbook/glomerulonephritis.php}> [Accessed 25 October 2013].
-% \newline
-% \newline
-% 
-% Forbes, J., Coughlan, M. and Cooper, M., 2008. Oxidative Stress as a Major Culprit in Kidney Disease in Diabetes, \textit{Diabetes,} 57(6), pp. 1446-1454.
-% \newline
-% \newline
-% 
-% Geeky Medics, 2010. \textit{Glomerulonephritis} [online] Available at: <\url{http://geekymedics.com/2010/10/27/glomerulonephritis/}> [Accessed 25 October 2013].
-% \newline
-% \newline
-% 
-% Gryglewski, R., Palmer, R., Moncada, S., 1986. Superoxide anion is involved in the break­down of endothelium derived relaxing factor, \textit{Nature,} 320, pp. 454-456.
-% \newline
-% \newline
-% 
-% Halliwell, B., 2001. Free Radicals and other reactive species in Disease, \textit{Encyclopedia of Life Sciences,} [e-journal] Available at:<\url{http://web.sls.hw.ac.uk/teaching/level4/bcm1_2/reading/oxidative_stress/files/Oxidative_stress.pdf}> [Accessed 19 October 2013]
-% \newline
-% \newline
-% 
-% Huang, H., Patel, P. and Salahudeen, A., 2001. Lazaroid compounds prevent early but not late stages of oxidant-induced cell injury: potential explanation for the lack of efficacy of lazaroids in clinical trials, \textit{Pharmacological Research,} 41(1), pp. 55-61.
-% \newline
-% \newline
-% 
-% Klinger, J., Abman, S. and Gladwin, M., 2013. Nitric Oxide Deficiency and Endothelial Dysfunction in Pulmonary Arterial Hypertension, \textit{American Journal of Respiratory and Critical Care Medicine,} 188(6), pp. 639-646.
-% \newline
-% \newline
-% 
-% Lindemann, I., Boettcher, J., Oertel, K., Pasternack, R., Heine, A. and Klebe, G. 2012. Inhibitors of Transglutaminase 2: A therapeutic option in celiac disease, \textit{To be Published,} [e-journal + PDB structure] Available at:<\url{http://www.ebi.ac.uk/pdbe-srv/view/entry/3s3s/summary}> [Accessed 24 October 2013]
-% \newline
-% \newline
-% 
-% Mayo Clinic, 2011. \textit{Glomerulonephritis} [online] Available at: <\url{http://www.mayoclinic.com/health/glomerulonephritis/DS00503/}> [Accessed 20 October 2013].
-% \newline
-% \newline
-% 
-% McCord, J., Roy, R. and Schaffer, S., 1985. Free radicals and myocardial ischemia. The role of xanthine oxidase, \textit{Advances in myocardiology,} [e-journal] Available at:<\url{http://www.ncbi.nlm.nih.gov/pubmed/2982206}> [Accessed 24 October 2013]
-% \newline
-% \newline
-% 
-% National Health Service, 2012. \textit{Causes of glomerulonephritis} [online] Available at: <\url{http://www.nhs.uk/Conditions/Glomerulonephritis/Pages/Causes.aspx}> [Accessed 20 October 2013].
-% \newline
-% \newline
-% 
-% Niaudet, P., 2013. \textit{Overview of the pathogenesis and causes of glomerulonephritis in children.} [online] Available at: <\url{http://www.uptodate.com/contents/overview-of- \ the-pathogenesis-and-causes-of-glomerulonephritis-in-children}> [Accessed 21 October 2013].
-% \newline
-% \newline
-% 
-% Ronco, P., 2013. \textit{Mechanisms of glomerular crescent formation.} [online] Available at: <\url{http://www.uptodate.com/contents/mechanisms-of-glomerular-crescent-formation}> [Accessed 21 October 2013].
-% \newline
-% \newline
-% 
-% Rutchik, J., 2013. \textit{Toxic Neuropathy Clinical Presentation.} [online] Available at: <\url{http://emedicine.medscape.com/article/1175276-clinical#a0216}> [Accessed 26 October 2013].
-% \newline
-% \newline
-% 
-% R\&D Systems, 2013. \textit{Technical Information. Ischemia/Reperfusion Injury.} [online] Available at: <\url{http://www.rndsystems.com/cb_detail_objectname_SP96_Ischemia.aspx}> [Accessed 28 October 2013].
-% \newline
-% \newline
-% 
-% Salahudeen, A., 1999. Free Radicals in Kidney Disease and Transplantation, \textit{Saudi Journal of Kidney Diseases and Transplantation,} 10(2), pp. 137-143.
-% \newline
-% \newline
-% 
-% Sarma, A., Mallick, A. and Ghosh, A., 2010. Free Radicals and Their Role in Different Clinical Conditions: An Overview, \textit{International Journal of Pharma Sciences and Research,} 1(3), pp. 182-192.
-% \newline
-% \newline
-% 
-% Shah, S., Baliga, R., Rajapurkar, M. and Fonseca, V., 2007. Oxidants in Chronic Kidney Disease, \textit{Journal of the American Society of Nephrology,} 18(1), pp. 16-28.
-% \newline
-% \newline
-% 
-% The University of Utah, Unknown. \textit{Glomerulonephritis} [online] Available at: <\url{http://library.med.utah.edu/WebPath/RENAHTML/RENALIDX.html#8}> [Accessed 25 October 2013].
-% \newline
-% \newline
-% 
-% Wang, C. and Salahudeen, A., 1994. Cyclosporine nephrotoxicity: attenuation by an antioxidant -inhibitor of lipid peroxidation in-vitro and in-vivo, \textit{Transplantation,} 58, pp. 940-946.
-% \newline
-% \newline
-% 
-% Wang, C. and Salahudeen, A., 1995. Lipid peroxidation accompanies cyclosporine nephrotoxicity: effects of vitamin E, \textit{Kidney International,} 47, pp. 927-934.
-% \newline
-% \newline
-% 
-% Weiss, S., 1989. Tissue Destruction by Neutrophils, \textit{New England Journal of Medicine,} 320, pp. 365-376.
-% \newline
-% \newline
+\subsection*{Bubblesort}
+\addcontentsline{toc}{subsubsection}{Bubblesort}
 
+\begin{quote}
+ Interpreter \\ 
+ Performance counter stats for './src/bci src/testcases/bubblesort.b':                \\ 
+                                                                                      \\ 
+       3781.533053      task-clock:u (msec)       \#    0.999 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+            11,321      page-faults:u             \#    0.003 M/sec                   \\ 
+    10,167,104,493      cycles:u                  \#    2.689 GHz                     \\ 
+    17,155,957,712      instructions:u            \#    1.69  insn per cycle          \\ 
+     3,164,534,393      branches:u                \#  836.839 M/sec                   \\ 
+         4,505,269      branch-misses:u           \#    0.14\% of all branches        \\ 
+                                                                                      \\ 
+       3.784120098 seconds time elapsed                                               \\ 
+                                                                                      \\ 
+LLI                                                                                     \\ 
+                                                                                      \\ 
+ Performance counter stats for 'lli ll-src/bubblesort.ll':                            \\ 
+                                                                                      \\ 
+         23.130742      task-clock:u (msec)       \#    0.989 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+             1,866      page-faults:u             \#    0.081 M/sec                   \\ 
+        50,664,247      cycles:u                  \#    2.190 GHz                     \\ 
+        64,035,872      instructions:u            \#    1.26  insn per cycle          \\ 
+        11,100,635      branches:u                \#  479.908 M/sec                   \\ 
+           292,971      branch-misses:u           \#    2.64\% of all branches        \\ 
+                                                                                      \\ 
+       0.023384569 seconds time elapsed                                               \\ 
+                                                                                      \\ 
+LLC                                                                                     \\ 
+                                                                                      \\ 
+ Performance counter stats for './ll-out/bubblesort':                                 \\ 
+                                                                                      \\ 
+          3.101557      task-clock:u (msec)       \#    0.940 CPUs utilized           \\ 
+                 0      context-switches:u        \#    0.000 K/sec                   \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                   \\ 
+               100      page-faults:u             \#    0.032 M/sec                   \\ 
+         7,518,050      cycles:u                  \#    2.424 GHz                     \\ 
+        14,464,612      instructions:u            \#    1.92  insn per cycle          \\ 
+         2,367,470      branches:u                \#  763.317 M/sec                   \\ 
+            20,241      branch-misses:u           \#    0.85\% of all branches        \\ 
+                                                                                      \\
+       0.003297922 seconds time elapsed                                               \\
+\end{quote}
+
+\subsection*{Fibonnacci}
+\addcontentsline{toc}{subsubsection}{Fibonnacci}
+
+\begin{quote}
+ Interpreter \\ 
+ Performance counter stats for './src/bci src/testcases/fibonnacci.b':             \\     
+                                                                                   \\ 
+         13.488520      task-clock:u (msec)       \#    0.984 CPUs utilized        \\   
+                 0      context-switches:u        \#    0.000 K/sec                \\   
+                 0      cpu-migrations:u          \#    0.000 K/sec                \\   
+             1,448      page-faults:u             \#    0.107 M/sec                \\   
+        28,853,790      cycles:u                  \#    2.139 GHz                  \\   
+        41,284,026      instructions:u            \#    1.43  insn per cycle       \\   
+         6,496,446      branches:u                \#  481.628 M/sec                \\   
+           112,475      branch-misses:u           \#    1.73\% of all branches     \\    
+                                                                                   \\ 
+       0.013707329 seconds time elapsed                                            \\ 
+                                                                                   \\ 
+LLI                                                                                     \\ 
+                                                                                   \\ 
+ Performance counter stats for 'lli ll-src/fibonnacci.ll':                         \\ 
+                                                                                   \\ 
+         17.555911      task-clock:u (msec)       \#    0.981 CPUs utilized        \\   
+                 0      context-switches:u        \#    0.000 K/sec                \\   
+                 0      cpu-migrations:u          \#    0.000 K/sec                \\   
+             1,845      page-faults:u             \#    0.105 M/sec                \\   
+        35,972,370      cycles:u                  \#    2.049 GHz                  \\   
+        48,363,807      instructions:u            \#    1.34  insn per cycle       \\   
+         8,192,814      branches:u                \#  466.670 M/sec                \\   
+           238,999      branch-misses:u           \#    2.92\% of all branches     \\    
+                                                                                   \\ 
+       0.017890038 seconds time elapsed                                            \\ 
+                                                                                   \\ 
+LLC                                                                                     \\ 
+                                                                                   \\ 
+ Performance counter stats for './ll-out/fibonnacci':                              \\ 
+                                                                                   \\ 
+          1.283848      task-clock:u (msec)       \#    0.857 CPUs utilized        \\   
+                 0      context-switches:u        \#    0.000 K/sec                \\   
+                 0      cpu-migrations:u          \#    0.000 K/sec                \\   
+                94      page-faults:u             \#    0.073 M/sec                \\   
+         2,615,905      cycles:u                  \#    2.038 GHz                  \\   
+         4,302,589      instructions:u            \#    1.64  insn per cycle       \\   
+           620,118      branches:u                \#  483.015 M/sec                \\   
+            19,153      branch-misses:u           \#    3.09\% of all branches     \\    
+                                                                                   \\ 
+       0.001498751 seconds time elapsed                                            \\ 
+\end{quote}
+
+\subsection*{Matrix Multiplication}
+\addcontentsline{toc}{subsubsection}{Matrix Multiplication}
+
+\begin{quote}
+ Interpreter \\ 
+
+ Performance counter stats for './src/bci src/testcases/matrix multiplication.b':    \\ 
+                                                                                     \\ 
+         18.762214      task-clock:u (msec)       \#    0.984 CPUs utilized          \\ 
+                 0      context-switches:u        \#    0.000 K/sec                  \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                  \\ 
+             1,466      page-faults:u             \#    0.078 M/sec                  \\ 
+        42,251,633      cycles:u                  \#    2.252 GHz                    \\ 
+        66,893,002      instructions:u            \#    1.58  insn per cycle         \\ 
+        11,357,038      branches:u                \#  605.314 M/sec                  \\ 
+           123,818      branch-misses:u           \#    1.09\% of all branches       \\ 
+                                                                                     \\ 
+       0.019070266 seconds time elapsed                                              \\ 
+                                                                                     \\ 
+LLI                                                                                     \\ 
+\\
+ Performance counter stats for 'lli ll-src/matrix multiplication.ll':                \\ 
+                                                                                     \\ 
+         24.161403      task-clock:u (msec)       \#    0.990 CPUs utilized          \\ 
+                 0      context-switches:u        \#    0.000 K/sec                  \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                  \\ 
+             1,938      page-faults:u             \#    0.080 M/sec                  \\ 
+        54,418,779      cycles:u                  \#    2.252 GHz                    \\ 
+        73,403,594      instructions:u            \#    1.35  insn per cycle         \\ 
+        13,353,191      branches:u                \#  552.666 M/sec                  \\ 
+           442,419      branch-misses:u           \#    3.31\% of all branches       \\ 
+                                                                                     \\ 
+       0.024399177 seconds time elapsed                                              \\ 
+                                                                                     \\ 
+LLC                                                                                     \\ 
+                                                                                     \\ 
+ Performance counter stats for './ll-out/matrix multiplication':                     \\ 
+                                                                                     \\ 
+          1.255880      task-clock:u (msec)       \#    0.816 CPUs utilized          \\ 
+                 0      context-switches:u        \#    0.000 K/sec                  \\ 
+                 0      cpu-migrations:u          \#    0.000 K/sec                  \\ 
+                99      page-faults:u             \#    0.079 M/sec                  \\ 
+         2,586,835      cycles:u                  \#    2.060 GHz                    \\ 
+         4,333,942      instructions:u            \#    1.68  insn per cycle         \\ 
+           626,453      branches:u                \#  498.816 M/sec                  \\ 
+            19,476      branch-misses:u           \#    3.11\% of all branches       \\ 
+                                                                                     \\ 
+       0.001539950 seconds time elapsed                                              \\ 
+\end{quote}
+
+
+% \begin{center}
+% \begin{tabular}{ ll| l | c | r }
+% \hline
+% Four nested loops \\
+% \hline
+% &interpreter & lli & llc	\\
+% &0m0.000s &	0m0.007s &	0m0.000s\\
+% \hline
+% Bubblesort \\
+% \hline
+% &interprer &  lli	 &   	llc		\\
+% &0m0.017s &  0m0.007s &   0m0.000s\\
+% \hline
+% Fibonnacci\\
+% \hline
+% &interpreter &  lli	 &   	llc		\\
+% &0m0.007s &  0m0.009s &   0m0.002s\\
+% \hline
+% Matrix Multiplication \\
+% \hline
+% &interpreter &  lli	 &   	llc	\\	
+% &0m0.000s &  0m0.000s &   0m0.000s\\
+% \hline
+% \end{tabular}
+% \end{center}
 
 \end{document}
 
